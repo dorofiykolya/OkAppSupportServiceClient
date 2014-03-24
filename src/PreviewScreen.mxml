@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" 
+		 height="100%"
+		 mouseEnabled="false"
+		 creationComplete="onComplete(event)"
+		 >
+	<fx:Script>
+		<![CDATA[
+			import com.adobe.images.JPGEncoder;
+			
+			import core.GlobalManager;
+			
+			import flash.display.Bitmap;
+			import flash.display.BitmapData;
+			import flash.display.DisplayObject;
+			import flash.display.Loader;
+			import flash.display.LoaderInfo;
+			import flash.display.MovieClip;
+			import flash.events.Event;
+			import flash.events.IOErrorEvent;
+			import flash.events.MouseEvent;
+			import flash.filters.GlowFilter;
+			import flash.net.FileReference;
+			import flash.net.URLLoader;
+			import flash.net.URLRequest;
+			import flash.net.URLStream;
+			import flash.net.navigateToURL;
+			import flash.utils.ByteArray;
+			import flash.utils.Endian;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.JPEGEncoder;
+			import mx.utils.URLUtil;
+			
+			import net.Connection;
+			
+			import utilities.Debug;
+			
+			
+			private static var inst:PreviewScreen;
+			private static var isInit:Boolean;
+			private static var _isVisible:Boolean = false;
+			private static var imgId:int;
+			private static var listId:Vector.<int>;
+			
+			private static var _tempBuffer:ByteArray;
+			
+			public static function get isVisible():Boolean{
+				return _isVisible;
+			}
+			
+			public static function show(imageId:int, list:Vector.<int>):void{
+				imgId = imageId;
+				listId = list;
+				if(isVisible) return;
+				Preloader.show(Preloader.LOAD);
+				FlexGlobals.topLevelApplication.popUp.addElement(instance);
+				_isVisible = true;
+				Connection.send( { getScreenShot: { id:imgId }} );
+			}
+			public static function hide():void{
+				if(isVisible == false) return;
+				if(FlexGlobals.topLevelApplication.popUp.contains(instance)){
+					FlexGlobals.topLevelApplication.popUp.removeElement(instance);
+				}
+				_isVisible = false;
+				if (isInit) {
+					instance.img.source = null;
+				}
+				GlobalManager.stage.removeEventListener(KeyboardEvent.KEY_DOWN, instance.onKeyDown);
+			}
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				Controller.AddHandler("screenBytes", loadImage);
+				Controller.AddHandler("screenShotLink", loadImageLink);
+				validate();
+				
+				var menu:ContextMenu = new ContextMenu();
+				menu.hideBuiltInItems();
+				var cm:ContextMenuItem = new ContextMenuItem("Сохранить Скрин"); 
+				cm.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, onSaveImage);
+				menu.customItems.push(cm);
+				img.contextMenu = menu;
+			}
+			
+			private function validate():void 
+			{
+				if (isInit == false) return;
+				
+				loadImage(Controller.GetValue("screenBytes") as ByteArray);
+				loadImageLink(Controller.GetValue("screenShotLink") as String);
+			}
+			
+			private function loadImageLink(source:String):void {
+				_tempBuffer = null;
+				if (source == null) return;
+				Preloader.show(Preloader.LOAD);
+				img.addEventListener(Event.COMPLETE, onLoadCompleteImg);
+				img.addEventListener(IOErrorEvent.IO_ERROR, onLoadIOError);
+				img.source = source;
+			}
+			
+			private function onLoadIOError(e:IOErrorEvent):void 
+			{
+				var url:String = Controller.GetValue("screenShotLink") as String;
+				if (url) {
+					navigateToURL(new URLRequest(url), "_blank");
+				}
+				Preloader.show(Preloader.ERROR);
+				Preloader.hide(Preloader.LOAD);
+				Preloader.hide(Preloader.ERROR, 1500);
+			}
+			
+			private function onLoadCompleteImg(e:Event):void 
+			{
+				Preloader.hide(Preloader.LOAD);
+			}
+			
+			private function loadImage(buffer:ByteArray):void {
+				_tempBuffer = null;
+				if (buffer == null) return;
+				_tempBuffer = buffer;
+				img.addEventListener(IOErrorEvent.IO_ERROR, onLoadIOError);
+				img.addEventListener(Event.COMPLETE, onLoadComplete);
+				img.source = buffer;
+			}
+			
+			private function onLoadComplete(e:Event):void 
+			{
+				Preloader.hide(Preloader.LOAD);
+				GlobalManager.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
+			}
+			
+			public static function get instance():PreviewScreen{
+				if(inst == null) inst = new PreviewScreen();
+				return inst as PreviewScreen;
+			}
+			
+			protected function onCloseRollOver(event:MouseEvent):void
+			{
+				btnClose.filters = [new GlowFilter(0xFFFFFF, 1, 5, 5, 1, 1)];
+			}
+			
+			protected function onCloseRollOut(event:MouseEvent):void
+			{
+				btnClose.filters = [];	
+			}
+			
+			protected function onCloseClick(event:MouseEvent):void
+			{
+				hide();
+			}
+			
+			protected function onSaveImage(event:ContextMenuEvent = null):void
+			{
+				try{
+					var jpg:JPGEncoder = new JPGEncoder(90);
+					var b:BitmapData = new BitmapData(img.content.width, img.content.height);
+					b.draw(img.content);
+					var byte:ByteArray = jpg.encode(b);
+					var file:FileReference = new FileReference();
+					file.save(byte, "screen.jpg");
+				}catch(e:Error){
+					Alert.show(e.message, e.name);
+				}
+			}
+			
+			protected function onKeyDown(event:KeyboardEvent):void
+			{
+				if(event.ctrlKey && event.charCode == "s".charCodeAt(0)){
+					onSaveImage(null);
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<s:Rect width="100%" height="100%">
+		<s:fill>
+			<s:SolidColor color="0" alpha="0.9" />
+		</s:fill>
+	</s:Rect>
+	<s:Group id="content" minHeight="300" minWidth="300" verticalCenter="0" horizontalCenter="0">
+		<mx:Image id="img" maxWidth="{this.width}" maxHeight="{this.height}" mouseChildren="false" mouseEnabled="true" complete="onLoadComplete(event)" />
+		<s:Image id="btnClose"  buttonMode="true"  useHandCursor="true" right="0" top="0" source="@Embed(source='assets/close.png')" rollOver="onCloseRollOver(event)" rollOut="onCloseRollOut(event)" click="onCloseClick(event)"/>
+	</s:Group>
+	
+</s:Group>

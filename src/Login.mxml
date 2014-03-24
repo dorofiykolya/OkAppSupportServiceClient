@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="100%"
+				   height="100%"
+				   backgroundColor="#636363"
+				   creationComplete="onComplete(event)">
+	<fx:Script>
+		<![CDATA[
+			import flash.filters.BlurFilter;
+			import flash.net.SharedObject;
+			
+			import mx.controls.Alert;
+			import mx.core.FlexGlobals;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ValidationResultEvent;
+			
+			import net.Connection;
+			private static var inst:Login;
+			private static var _isVisible:Boolean;
+			private static const APP_ID:String = "SUPPORT_APP";
+			
+			public static function show():void
+			{
+				FlexGlobals.topLevelApplication.desktop.filters = [new BlurFilter()];
+				FlexGlobals.topLevelApplication.popUp.addElement(instance);
+				_isVisible = true;
+			}
+			
+			public static function hide():void
+			{
+				if (_isVisible == false)
+					return;
+				FlexGlobals.topLevelApplication.desktop.filters = [];
+				FlexGlobals.topLevelApplication.popUp.removeElement(instance);
+				_isVisible = false;
+			}
+			
+			public static function get instance():Login
+			{
+				if (inst == null)
+					inst = new Login();
+				return inst;
+			}
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				//onTryAuth(null);
+				var shared:SharedObject = SharedObject.getLocal(APP_ID);
+				if (shared)
+				{
+					login.text = String(shared.data["login"]);
+					password.text = String(shared.data["password"]);
+				}
+			}
+			
+			protected function onCloseWindow(event:CloseEvent):void
+			{
+				Preloader.show(Preloader.ERROR);
+				Login.hide();
+				Alert.show("Вы не авторизированы, авторизируйтесь", "Авторизация", 4, null, showAuthorization);
+			}
+			
+			public function showAuthorization(... p):void
+			{
+				Login.show();
+				Preloader.hide(Preloader.AUTHORIZATION_FAULT);
+			}
+			
+			protected function onTryAuth(event:Event):void
+			{
+				var loginValid:Boolean;
+				var passwordValid:Boolean;
+				var loginResult:ValidationResultEvent = loginValidator.validate();
+				var passwordResult:ValidationResultEvent = passwordValidator.validate();
+				
+				if (loginResult.results == null)
+					loginValid = true;
+				if (passwordResult.results == null)
+					passwordValid = true;
+				
+				if (loginValid == false)
+				{
+					Alert.show("не правильный формат логина", "ошибка");
+					return;
+				}
+				if (passwordValid == false)
+				{
+					Alert.show("не правильный формат пароля", "ошибка");
+					return;
+				}
+				Preloader.show(Preloader.AUTHORIZATION);
+				Login.hide();
+				var shared:SharedObject = SharedObject.getLocal(APP_ID);
+				if (shared)
+				{
+					shared.data["login"] = login.text;
+					shared.data["password"] = password.text;
+				}
+				Connection.send({userAuth: {login: login.text, password: password.text}});
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<mx:StringValidator id="loginValidator"
+							source="{login}"
+							property="text"
+							requiredFieldError="введите логин"
+							minLength="1"
+							tooShortError="логин не может быть меньше 1 символов" />
+		<mx:StringValidator id="passwordValidator"
+							source="{password}"
+							property="text"
+							requiredFieldError="введите пароль"
+							minLength="1"
+							tooShortError="пароль не может быть меньше 1 символов" />
+	</fx:Declarations>
+	<s:TitleWindow width="450"
+				   height="186"
+				   verticalCenter="0"
+				   horizontalCenter="0"
+				   borderVisible="true"
+				   dropShadowVisible="true"
+				   close="onCloseWindow(event)"
+				   title="Авторизация"
+				   enabled="true">
+		<s:Form y="10"
+				left="10"
+				right="10"
+				backgroundColor="#EFEFEF">
+			<s:layout>
+				<s:VerticalLayout />
+			</s:layout>
+			<s:FormItem width="100%"
+						label="Логин  "
+						color="#636363"
+						fontFamily="Tahoma">
+				<s:layout>
+					<s:BasicLayout />
+				</s:layout>
+				<s:helpContent>
+					<s:VGroup>
+						<s:Label text="введите логин">
+						</s:Label>
+					</s:VGroup>
+				</s:helpContent>
+				<s:TextInput id="login"
+							 x="10"
+							 enter="onTryAuth(event)"
+							 text="" />
+			</s:FormItem>
+			<s:FormItem width="100%"
+						label="Пароль"
+						color="#636363">
+				<s:layout>
+					<s:BasicLayout />
+				</s:layout>
+				<s:helpContent>
+					<s:VGroup>
+						<s:Label text="введите пароль">
+						</s:Label>
+					</s:VGroup>
+				</s:helpContent>
+				<s:TextInput id="password"
+							 x="3"
+							 displayAsPassword="true"
+							 enter="onTryAuth(event)"
+							 text="" />
+			</s:FormItem>
+		</s:Form>
+		<s:Button y="128"
+				  left="10"
+				  right="10"
+				  buttonMode="true"
+				  useHandCursor="true"
+				  label="авторизироваться"
+				  color="#636363"
+				  cornerRadius="0"
+				  click="onTryAuth(event)" />
+	</s:TitleWindow>
+
+</s:BorderContainer>

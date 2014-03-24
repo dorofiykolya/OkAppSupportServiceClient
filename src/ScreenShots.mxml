@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Image xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="18" 
+		 height="16" smooth="false" 
+		 source="@Embed('assets/screen.png')"
+		 buttonMode="true"
+		 useHandCursor="true"
+		 rollOver="onRollOver(event)"
+		 rollOut="onRollOut(event)"
+		 click="onClick(event)"
+		 >
+	
+	<fx:Script>
+		<![CDATA[
+			import flash.events.MouseEvent;
+			import flash.geom.ColorTransform;
+			import utilities.DelayTimeAction;
+			
+			public var screenId:int;
+			public var screenList:Vector.<int>;
+			
+			protected function onRollOver(event:MouseEvent):void
+			{
+				transform.colorTransform = new ColorTransform(1.5,1.5,1.5);
+			}
+			
+			protected function onRollOut(event:MouseEvent):void
+			{
+				transform.colorTransform = new ColorTransform();
+			}
+			
+			protected function onClick(event:MouseEvent):void
+			{
+				if(enabled == false) return;
+				enabled = false;
+				PreviewScreen.show(screenId, screenList);
+				new DelayTimeAction(onDelayComplete, 1000);
+			}
+			
+			private function onDelayComplete():void{
+				enabled = true;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+</s:Image>

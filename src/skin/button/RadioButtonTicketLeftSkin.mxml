@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+			 xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+			 height="31" xmlns:mx="library://ns.adobe.com/flex/mx"
+			 width="100%" xmlns:graphics="skin.graphics.*"
+			 mouseChildren="false" mouseEnabled="false" tabChildren="false" tabEnabled="false"
+			 focusEnabled="false"
+			 >
+	<fx:Metadata>[HostComponent("RadioButtonTicket")]</fx:Metadata>
+	<s:states>
+		<s:State name="up" stateGroups="upStates" />
+		<s:State name="over" stateGroups="upStates" />
+		<s:State name="down" stateGroups="upStates" />
+		<s:State name="disabled" stateGroups="disabledStates" />
+		<s:State name="upAndSelected" stateGroups="selectedStates" />
+		<s:State name="overAndSelected" stateGroups="selectedStates" />
+		<s:State name="downAndSelected" stateGroups="selectedStates" />
+		<s:State name="disabledAndSelected" stateGroups="disabledStates, selectedStates" />
+	</s:states>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	
+	<graphics:TopGraphicsLeft width="100%" includeIn="upStates,disabledStates" />
+	<s:Graphic width="100%" includeIn="selectedStates" version="2.0" scaleGridLeft="8" scaleGridRight="212" scaleGridTop="5" scaleGridBottom="28">
+		<s:Path winding="nonZero" x="-0.083" y="-0.5" data="M 213.5 31.5 L 0.5 31.5 L 0.5 3.5 C 0.5 1.844 1.843 0.5 3.5 0.5 L 213.5 0.5 L 213.5 31.5 Z">
+			<s:fill>
+				<s:SolidColor color="#FFFFFF"/>
+			</s:fill>
+		</s:Path>
+	</s:Graphic>
+	<s:HGroup width="100%" height="31" gap="5" verticalAlign="middle" horizontalAlign="center" >
+		<s:BitmapImage alpha="0.8" source="@Embed(source='../../assets/new.png')" width="24" height="20" scaleMode="letterbox" smooth="true" smoothingQuality="high" />
+		<s:Label text="Новые" fontFamily="Tahoma" color="#636363" paddingTop="2" fontWeight="bold" includeIn="selectedStates" />
+	</s:HGroup>
+</s:Skin>

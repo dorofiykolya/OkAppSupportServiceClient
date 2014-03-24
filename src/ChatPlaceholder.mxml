@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 height="100%"
+		 currentState="clear"
+		 creationComplete="onComplete(event)"
+		 >
+	<s:states>
+		<s:State name="message" />
+		<s:State name="clear" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import com.hillelcoren.utils.StringUtils;
+			
+			import messages.Message;
+			import messages.Word;
+			
+			import mx.controls.HRule;
+			import mx.events.FlexEvent;
+			
+			import utilities.StrUtil;
+			private var isInit:Boolean;
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				Controller.AddHandler("messages", onMessages);
+				onMessages(Controller.GetValue("messages") as Vector.<Word>);
+				Controller.AddHandler("message", onMessage);
+				
+				//Controller.AddHandler("test", onTest);
+			}
+			
+			private function onMessage(e:Message):void{
+				if(e == null){
+					removeAll();
+					currentState = "clear";
+				}
+			}
+			
+			private function onMessages(m:Vector.<Word>):void
+			{
+				if(isInit == false) return;
+				removeAll();
+				
+				if(m == null) return;
+				if(m.length == 0){
+					currentState = "clear";
+					return;
+				}else{
+					currentState = "message";
+				}
+				var p:ChatWord;
+				for each (var w:Word in m) 
+				{
+					p = new ChatWord();
+					p.word = w;
+					list.addElement(p);
+					var r:HRule = new HRule();
+					r.width = 400;
+					list.addElement(r);
+				}
+				 
+				list.validateNow();
+				scroller.validateNow();
+				scroller.verticalScrollBar.value = scroller.verticalScrollBar.maximum;
+			}
+			
+			
+			
+			private function removeAll():void{
+				list.removeAllElements();
+				list.validateNow();
+			}
+			
+			private function onTest():void
+			{
+				var list:Vector.<Word> = new Vector.<Word>();
+				for (var i:int = 0; i < int(Math.random() * 30); i++) 
+				{
+					var w:Word = new Word();
+					w.id = i+1;
+					w.from = "bob "+i;
+					w.message = StrUtil.duplicateString("Я у папы дурочка! ", Math.random()* 100);
+					w.time = new Date().time / i;
+					w.type = i % 2 == 0? "response": "message"; 
+					list.push(w);
+				}
+				onMessages(list);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<s:Scroller id="scroller" width="100%" height="100%" horizontalScrollPolicy="off">
+		<s:VGroup id="list" width="100%" gap="0" >
+			
+		</s:VGroup>
+	</s:Scroller>
+	<s:Label color="#CBCBCB" fontSize="16" fontWeight="bold" horizontalCenter="0"
+			 text="НЕТ СООБЩЕНИЙ" verticalCenter="0"
+			 visible.clear="true" color.clear="#DEDEDE"
+			 visible.message="false"/>
+</s:Group>

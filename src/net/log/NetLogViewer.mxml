@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+				  xmlns:ui="ui.*"
+				  width="700"
+				  height="600" 
+				  verticalScrollPolicy="off"
+				  horizontalScrollPolicy="off"
+				  verticalCenter="0"
+				  horizontalCenter="0"
+				  backgroundColor="#494949"
+				  >
+	<mx:Script>
+		<![CDATA[
+			import mx.events.ItemClickEvent;
+			import mx.events.ListEvent;
+			import mx.utils.ObjectUtil;
+			
+			import net.Connection;
+			
+			private static var _isVisible:Boolean;
+			public static function show():void {
+				if (_isVisible) {
+					hide();
+					return;
+				}
+				NetLogManager.container.addChild(instance);
+				_isVisible = true;
+			}
+			public static function hide():void {
+				if (_isVisible == false) return
+				if (NetLogManager.container.contains(instance)) {
+					NetLogManager.container.removeChild(instance);
+				}
+				_isVisible = false;
+			}
+			
+			private static var inst:NetLogViewer;
+			public static function get instance():NetLogViewer{
+				if(inst == null) inst = new NetLogViewer();
+				return inst as NetLogViewer;
+			}
+			
+			private var lastSearchPosition:Number = 0;
+			
+			protected function onRefreshDataGrid(event:MouseEvent):void
+			{
+				dataGrid.dataProvider = NetLogData.list;
+			}
+			
+			
+			protected function onChangeDataGrid(event:ListEvent):void
+			{
+				var logObj:NetLog = dataGrid.selectedItem as NetLog;
+				var o:Object = logObj.object;
+				var arr:Array = [];
+				for(var s:String in o){
+					var n:NetLog = new NetLog();
+					if(o[s] is String){
+						n.type = "String";
+						n.value = o[s];
+					}else if(o[s] is Number){
+						n.type = "Number";
+						n.value = o[s];
+					}else if(o[s] is Array){
+						n.type = "Array";
+						n.value = "[Array]";
+					}else if(o[s] is Boolean){
+						n.type = "Boolean";
+						n.value = o[s];
+					}else{
+						n.type = "Object";
+						n.value = "[Object]";
+					}
+					n.name = s;
+					n.object = o[s];
+					arr.push(n);
+				}
+				dataGridName.dataProvider = arr;
+			}
+	
+			protected function onDataGridNameChange(event:ListEvent):void
+			{
+				var logObj:NetLog = dataGridName.selectedItem as NetLog;
+				if(logObj.type == "String"){
+					objectText.text = String(logObj.object);
+				}else if(logObj.type == "Number"){
+					objectText.text = Number(logObj.object).toString();
+				}else if(logObj.type == "Boolean"){
+					objectText.text = Boolean(logObj.object).toString();
+				}else{
+					var w:NetLogWindow = new NetLogWindow();
+					w.show();
+					w.setInfo(logObj);
+				}
+			}
+			
+		]]>
+	</mx:Script>
+	
+	<mx:Button x="10" y="4" width="300" label="refresh" cornerRadius="0" click="onRefreshDataGrid(event)"/>
+		<mx:HDividedBox top="30" left="10" right="10" bottom="100" label="panel" backgroundColor="#494949"
+				   horizontalScrollPolicy="on">
+			<mx:DataGrid id="dataGrid" width="311" height="100%" change="onChangeDataGrid(event)"
+						 color="#000000">
+				<mx:columns>
+					<mx:DataGridColumn width="100" dataField="time" fontSize="10" headerText="time"
+									   resizable="false"/>
+					<mx:DataGridColumn width="40" dataField="type" headerText="type"
+									   resizable="false"/>
+					<mx:DataGridColumn dataField="name" headerText="package" />
+				</mx:columns>
+			</mx:DataGrid>
+			
+			<mx:DataGrid id="dataGridName" x="329" y="30" width="339" height="100%" change="onDataGridNameChange(event)"
+						 variableRowHeight="true">
+				<mx:columns>
+					<mx:DataGridColumn width="50" dataField="type" fontSize="9" headerText="type"
+									   letterSpacing="-0.25"/>
+					<mx:DataGridColumn dataField="name" headerText="name"/>
+					<mx:DataGridColumn width="50" dataField="value" headerText="value"/>
+				</mx:columns>
+			</mx:DataGrid>
+			
+		</mx:HDividedBox>
+	<mx:Text id="objectText" left="10" right="10" bottom="10" height="82" color="#FFFFFF"
+			 text="Текст" textAlign="center"/>
+	<mx:Button right="10" top="4" width="100" cornerRadius="0" label="X" click="{NetLogViewer.hide();}"/>
+	
+</mx:Canvas>

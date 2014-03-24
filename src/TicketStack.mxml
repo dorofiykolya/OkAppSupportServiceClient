@@ -1,0 +1,765 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				   xmlns:s="library://ns.adobe.com/flex/spark"
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   xmlns:button="skin.button.*"
+				   height="100%"
+				   width="250"
+				   minWidth="250"
+				   maxWidth="500" 
+				   skinClass="skin.container.RoundContainerSkin"
+				   creationComplete="onComplete(event)"
+				   resize="onResizeButton(event)" 
+				   xmlns:local="*"
+				   currentState="scheduledState" 
+				   xmlns:graphics="skin.graphics.*"
+				   >
+	<s:states>
+		<s:State name="answeredState" />
+		<s:State name="scheduledState" />
+		<s:State name="favoriteState" />
+		<s:State name="closeState" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import System.Text.StringUtil;
+			
+			import events.MessageEvent;
+			
+			import flash.events.Event;
+			import flash.events.MouseEvent;
+			import flash.filters.GlowFilter;
+			
+			import messages.Message;
+			import messages.MessageList;
+			
+			import mx.collections.XMLListCollection;
+			import mx.controls.Menu;
+			import mx.controls.TextInput;
+			import mx.controls.Tree;
+			import mx.controls.menuClasses.MenuBarItem;
+			import mx.controls.treeClasses.DefaultDataDescriptor;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.events.ResizeEvent;
+			
+			import net.Connection;
+			
+			import skin.graphics.BlueRectangleSkin;
+			import skin.graphics.GrayRectangleSkin;
+			
+			import spark.components.Group;
+			import spark.components.VGroup;
+			
+			import utilities.Debug;
+			import utilities.SafeInvoke;
+			
+			public static const ANSWERED_STATE:String = "answeredState";
+			public static const SCHEDULED_STATE:String = "scheduledState";
+			public static const FAVORITE_STATE:String = "favoriteState";
+			public static const CLOSE_STATE:String = "closeState";
+			
+			private var isInit:Boolean;
+			
+			[Bindable]
+			private static var positionAnswered:int;
+			[Bindable]
+			private static var positionClosed:int;
+			[Bindable]
+			private static var positionScheduled:int;
+			[Bindable]
+			private static var positionFavorite:int;
+			
+			private static var count:int = 20;
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				
+				MessageList.addListener(MessageEvent.MESSAGE_ADD, onMessageAdd);
+				MessageList.addListener(MessageEvent.MESSAGE_COUNT_CHANGE, onMessageCountChange);
+				MessageList.addListener(MessageEvent.MESSAGE_FAVORITE_CHANGE, onMessageFavoriteChange);
+				MessageList.addListener(MessageEvent.MESSAGE_STATE_CHANGE, onMessageStateChange);
+				MessageList.addListener(MessageEvent.MESSAGE_UPDATE, onMessageUpdate);
+				MessageList.addListener(MessageEvent.MESSAGE_UPDATE_LIST, onMessageUpdateList);
+				MessageList.addListener(MessageEvent.MESSAGE_REMOVE_STATE, onMessageRemvoeState);
+				MessageList.addListener(MessageEvent.MESSAGE_REMOVE, onMessageRemove);
+				
+				onMessageCountChange(null);
+				
+				onMessageUpdateList(null);
+				
+				validateRadioButton();
+			}
+			
+			private function onMessageRemove(e:MessageEvent):void 
+			{
+				switch(currentState) {
+						case "answeredState":
+							if (TicketGroup.answeredGroup.selected) {
+								if (TicketGroup.answeredGroup.selected.message.id == e.message.id) {
+									clearInfo();
+								}
+							}
+							break;
+						case "scheduledState":
+							if (TicketGroup.scheduledGroup.selected) {
+								if (TicketGroup.scheduledGroup.selected.message.id == e.message.id) {
+									clearInfo();
+								}
+							}
+							break;
+						case "favoriteState":
+							if (TicketGroup.favoriteGroup.selected) {
+								if (TicketGroup.favoriteGroup.selected.message.id == e.message.id) {
+									clearInfo();
+								}
+							}
+							break;
+						case "closeState":
+							if (TicketGroup.closedGroup.selected) {
+								if (TicketGroup.closedGroup.selected.message.id == e.message.id) {
+									clearInfo();
+								}
+							}
+							break;
+					}
+				var current:TicketPlaceholder; 
+				if(current == null){
+					current = TicketGroup.answeredGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countAnswered--;
+						SafeInvoke.Invoke(answeredList.removeElement, current);
+					}
+				}
+				if(current == null){
+					current = TicketGroup.closedGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countClosed--;
+						SafeInvoke.Invoke(closeListList.removeElement, current);
+					}
+				}
+				if(current == null){
+					current = TicketGroup.favoriteGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countFavorite--;
+						SafeInvoke.Invoke(favoriteList.removeElement, current);
+					}
+				}
+				if(current == null){
+					current = TicketGroup.scheduledGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countScheduled--;
+						SafeInvoke.Invoke(scheduledList.removeElement, current);
+					}
+				}
+			}
+			
+			private function onMessageRemvoeState(e:MessageEvent):void 
+			{
+				var state:String = e.value as String;
+				switch(state) {
+					case Message.STATE_ANSWERED:
+						TicketGroup.answeredGroup.Reset();
+						MessageList.countAnswered = 0;
+						answeredList.removeAllElements();
+						break;
+					case Message.STATE_CLOSED:
+						TicketGroup.closedGroup.Reset();
+						MessageList.countClosed = 0;
+						closeListList.removeAllElements();
+						break;
+					case Message.STATE_SCHEDULED:
+						TicketGroup.scheduledGroup.Reset();
+						MessageList.countScheduled = 0;
+						scheduledList.removeAllElements();
+						break;
+				}
+			}
+			
+			protected function onGroupChange(event:Event):void
+			{
+				validateRadioButton();
+				currentState = group.selectedValue as String;
+				resetSearchChildren();
+				switch(currentState){
+					case "answeredState":
+						TicketGroup.answeredGroup.UnselectCurrent();
+						Controller.SetValue("message", null);
+						Controller.SetValue("messages", null);
+						Controller.Invoke("message", null);
+						break;
+					case "scheduledState":
+						TicketGroup.scheduledGroup.UnselectCurrent();
+						Controller.SetValue("message", null);
+						Controller.SetValue("messages", null);
+						Controller.Invoke("message", null);
+						break;
+					case "favoriteState":
+						TicketGroup.favoriteGroup.UnselectCurrent();
+						Controller.SetValue("message", null);
+						Controller.SetValue("messages", null);
+						Controller.Invoke("message", null);
+					case "closeState":
+						TicketGroup.favoriteGroup.UnselectCurrent();
+						Controller.SetValue("message", null);
+						Controller.SetValue("messages", null);
+						Controller.Invoke("message", null);
+				}
+			}
+			
+			private function validateRadioButton():void{
+				
+				if(group.selection == leftButton){
+					leftButton.useHandCursor = false;
+					rightButton.useHandCursor = true;
+					favoriteButton.useHandCursor = true;
+					closeButton.useHandCursor = true;
+					rightButton.toolTip = "обработаные";
+					leftButton.toolTip = "";
+					closeButton.toolTip = "закрытые";
+					favoriteButton.toolTip = "избранное";
+					leftButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					favoriteButton.width = 36;
+					rightButton.width = 36;
+					closeButton.width = 36;
+				}else if(group.selection == rightButton){
+					leftButton.useHandCursor = true;
+					rightButton.useHandCursor = false;
+					favoriteButton.useHandCursor = true;
+					closeButton.useHandCursor = true;
+					rightButton.toolTip = "";
+					favoriteButton.toolTip = "избранное";
+					favoriteButton.width = 36;
+					closeButton.toolTip = "закрытые";
+					leftButton.toolTip = "новые";
+					rightButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					leftButton.width = 36;
+					closeButton.width = 36;
+				}else if(group.selection == closeButton){
+					leftButton.useHandCursor = true;
+					rightButton.useHandCursor = true;
+					favoriteButton.useHandCursor = true;
+					closeButton.useHandCursor = false;
+					rightButton.toolTip = "обработаные";
+					favoriteButton.toolTip = "избранное";
+					leftButton.toolTip = "новые";
+					closeButton.toolTip = "";
+					closeButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					rightButton.width = 36;
+					leftButton.width = 36; 
+					favoriteButton.width = 36;
+				}else{
+					leftButton.useHandCursor = true;
+					rightButton.useHandCursor = true;
+					favoriteButton.useHandCursor = false;
+					closeButton.useHandCursor = true;
+					rightButton.toolTip = "обработаные";
+					favoriteButton.toolTip = "";
+					closeButton.toolTip = "закрытые";
+					leftButton.toolTip = "новые";
+					favoriteButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					rightButton.width = 36;
+					leftButton.width = 36; 
+					closeButton.width = 36;
+				}
+			}
+			
+			protected function onResizeButton(event:ResizeEvent):void
+			{
+				radioButtonContainer.width = width;
+				
+				validateRadioButton();
+			}
+			
+			
+			private function addToSCHEDULED(t:TicketPlaceholder, index:int = -1):void{
+				if(t.group){
+					t.group.Remove(t);
+				}
+				t.group = TicketGroup.scheduledGroup;
+				if(index >= 0){
+					scheduledList.addElementAt(t, index);
+					return;
+				}
+				scheduledList.addElement(t);
+			}
+			private function addToANSWERED(t:TicketPlaceholder, index:int = -1):void{
+				if(t.group){
+					t.group.Remove(t);
+				}
+				t.group = TicketGroup.answeredGroup;
+				if(index >= 0){
+					answeredList.addElementAt(t, index);
+					return;
+				}
+				answeredList.addElement(t);
+			}
+			private function addToCLOSED(t:TicketPlaceholder, index:int = -1):void{
+				if(t.group){
+					t.group.Remove(t);
+				}
+				t.group = TicketGroup.closedGroup;
+				if(index>=0){
+					closeListList.addElementAt(t, index);
+				}else{
+					closeListList.addElement(t);
+				}
+			}
+			private function addToFavorite(t:TicketPlaceholder, index:int = -1):void{
+				if(t.group){
+					t.group.Remove(t);
+				}
+				t.group = TicketGroup.favoriteGroup;
+				if(index>=0){
+					favoriteList.addElementAt(t, index);
+				}else{
+					favoriteList.addElement(t);
+				}
+				
+			}
+			
+			protected function onEnterSearch(event:FlexEvent):void
+			{
+				var str:String = searchTxt.text;
+				if (str == "") {
+					resetSearchChildren();
+					return;
+				}
+				var r:RegExp = /^[0-9]{1,10}$/ig;
+				var math:Array = str.match(r);
+				
+				if (math.length > 0) {
+					Connection.send( { findMessage: { id:math[0] }} );
+					return;
+				}
+				
+				var h:RegExp = /^history:([0-9]){1,10}$/ig;
+				math = str.match(h);
+				if (math.length > 0) {
+					var st:String = math[0];
+					st = System.Text.StringUtil.Replace(st,"history:","");
+					Connection.send( { getUserMessagesFromUserId: { userId:st }} );
+					return;
+				}
+				
+				var current:Vector.<UIComponent>;
+				switch(currentState) {
+					case "answeredState":
+						current = getChildrenFromGroup(answeredList);
+						break;
+					case "scheduledState":
+						current = getChildrenFromGroup(scheduledList);
+						break;
+					case "favoriteState":
+						current = getChildrenFromGroup(favoriteList);
+						break;
+					case "closeState":
+						current = getChildrenFromGroup(closeListList);
+						break;
+				}
+				if (current == null) return;
+				for each (var item:UIComponent in current) 
+				{
+					var p:TicketPlaceholder = item as TicketPlaceholder;
+					if (p) {
+						if (p.message.title.indexOf(StringUtil.Trim(str)) == -1) {
+							p.includeInLayout = false;
+							p.visible = false;
+						}
+					}
+				}
+			}
+			
+			private function resetSearchChildren():void {
+				searchTxt.text = "";
+				var current:Vector.<UIComponent>;
+				var item:UIComponent;
+				current = getChildrenFromGroup(answeredList);
+				for each (item in current) 
+				{
+					item.includeInLayout = true;
+					item.visible = true;
+				}
+				current = getChildrenFromGroup(scheduledList);
+				for each (item in current) 
+				{
+					item.includeInLayout = true;
+					item.visible = true;
+				}
+				current = getChildrenFromGroup(favoriteList);
+				for each (item in current) 
+				{
+					item.includeInLayout = true;
+					item.visible = true;
+				}
+				current = getChildrenFromGroup(closeListList);
+				for each (item in current) 
+				{
+					item.includeInLayout = true;
+					item.visible = true;
+				}
+			}
+			
+			private function getChildrenFromGroup(group:Group):Vector.<UIComponent> {
+				var v:Vector.<UIComponent> = new Vector.<UIComponent>(group.numElements);
+				var i:int = group.numElements;
+				while (i--) {
+					v[i] = group.getElementAt(i) as UIComponent;
+				}
+				return v;
+			}
+			
+			private function onMessageAdd(e:MessageEvent):void
+			{
+				addMessage(e.message);
+			}
+			
+			private function onMessageCountChange(e:MessageEvent):void
+			{
+				countMessage.text = "Всего: " + MessageList.messageCount.toString();
+				answeredCount.text = MessageList.countAnswered.toString();
+				scheduledCount.text = MessageList.countScheduled.toString();
+				favoriteCount.text = MessageList.countFavorite.toString();
+				closeCount.text = MessageList.countClosed.toString();
+			}
+			
+			private function onMessageFavoriteChange(e:MessageEvent):void
+			{
+				onMessageUpdate(e);
+			}
+			
+			private function onMessageStateChange(e:MessageEvent):void
+			{
+				onMessageUpdate(e);
+			}
+			
+			private function onMessageUpdate(e:MessageEvent):void
+			{
+				var current:TicketPlaceholder; 
+				if(current == null){
+					current = TicketGroup.answeredGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countAnswered--;
+					}
+				}
+				if(current == null){
+					current = TicketGroup.closedGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countClosed--;
+					}
+				}
+				if(current == null){
+					current = TicketGroup.favoriteGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countFavorite--;
+					}
+				}
+				if(current == null){
+					current = TicketGroup.scheduledGroup.GetByMessageId(e.message.id);
+					if(current){
+						current.group.Remove(current);
+						MessageList.countScheduled--;
+					}
+				}
+				if(current == null) return;
+				current.message = e.message;
+				
+				if (e.message.favorite) {
+					MessageList.countFavorite++;
+					addToFavorite(current);
+					checkInfo(e.message);
+					return;
+				}
+				var index:int = 0;
+				
+				switch(e.message.state)
+				{
+					case Message.STATE_ANSWERED:
+						addToANSWERED(current);
+						MessageList.countAnswered++;
+						break;
+					case Message.STATE_CLOSED:
+						addToCLOSED(current);
+						MessageList.countClosed++;
+						break;
+					case Message.STATE_SCHEDULED:
+						MessageList.countScheduled++;
+						addToSCHEDULED(current);
+						break;
+				}
+				checkInfo(e.message);
+			}
+			
+			private function checkInfo(message:Message):void {
+				switch(currentState) {
+						case "answeredState":
+							if (TicketGroup.answeredGroup.selected) {
+								if (TicketGroup.answeredGroup.selected.message.id == message.id) {
+									clearInfo();
+									getMessagesFromServer(message.id);
+								}
+							}
+							break;
+						case "scheduledState":
+							if (TicketGroup.scheduledGroup.selected) {
+								if (TicketGroup.scheduledGroup.selected.message.id == message.id) {
+									clearInfo();
+									setFirst();
+									//getMessagesFromServer(message.id);
+								}
+							}
+							break;
+						case "favoriteState":
+							if (TicketGroup.favoriteGroup.selected) {
+								if (TicketGroup.favoriteGroup.selected.message.id == message.id) {
+									clearInfo();
+									getMessagesFromServer(message.id);
+								}
+							}
+							break;
+						case "closeState":
+							if (TicketGroup.closedGroup.selected) {
+								if (TicketGroup.closedGroup.selected.message.id == message.id) {
+									clearInfo();
+									getMessagesFromServer(message.id);
+								}
+							}
+							break;
+					}
+			}
+			
+			private function clearInfo():void {
+				Controller.SetValue("messages", null);
+				Controller.SetValue("message", null);
+				Controller.Invoke("messages", null);
+				Controller.Invoke("message", null);
+			}
+			
+			private function getMessagesFromServer(id:int):void {
+				Connection.send( {getMessages:{id:id} } );
+			}
+			
+			private function onMessageUpdateList(e:MessageEvent = null):void
+			{
+				TicketGroup.answeredGroup.Reset();
+				TicketGroup.closedGroup.Reset();
+				TicketGroup.favoriteGroup.Reset();
+				TicketGroup.scheduledGroup.Reset();
+				answeredList.removeAllElements();
+				scheduledList.removeAllElements();
+				
+				MessageList.ResetCount();
+				
+				var list:Vector.<Message> = MessageList.List;
+				for each (var m:Message in list) 
+				{
+					addMessage(m);
+				}
+			}
+			
+			private function addMessage(e:Message):void
+			{
+				var p:TicketPlaceholder;
+				if (e.favorite) {
+					MessageList.countFavorite++;
+					p = new TicketPlaceholder();
+					p.message = e;
+					addToFavorite(p);
+					return; 
+				}
+				switch(e.state){
+					case Message.STATE_ANSWERED:
+						MessageList.countAnswered++;
+						p = new TicketPlaceholder();
+						p.message = e;
+						addToANSWERED(p);
+						break;
+					case Message.STATE_CLOSED:
+						MessageList.countClosed++;
+						p = new TicketPlaceholder();
+						p.message = e;
+						addToCLOSED(p);
+						break;
+					case Message.STATE_SCHEDULED:
+						MessageList.countScheduled++;
+						p = new TicketPlaceholder();
+						p.message = e;
+						addToSCHEDULED(p);
+						break; 
+				}
+			}
+			
+			protected function onMenuClick(event:MouseEvent):void
+			{
+				var m:MenuBarItem = event.target as MenuBarItem;
+				if(m){
+					Debug.Trace(m.id, m.uid, m.data, m.dataProvider);
+				}
+			}
+			
+			protected function onMenuItemClick(e:MenuEvent):void
+			{
+				Debug.Trace(e.item, e.label);
+			}
+			
+			protected function onClickLeft(event:MouseEvent):void
+			{
+				switch(currentState){
+					case "answeredState":
+						if(positionAnswered == 0) return;
+						positionAnswered--;
+						Connection.send({getMessageAt:{next:positionAnswered*count, back:positionAnswered*count+count, state:2, favorite:false}});
+						break;
+					case "scheduledState":
+						if(positionScheduled == 0) return;
+						positionScheduled--;
+						Connection.send({getMessageAt:{next:positionScheduled*count, back:positionScheduled*count+count, state:1, favorite:false}});
+						break;
+					case "favoriteState":
+						if(positionFavorite == 0) return;
+						positionFavorite--;
+						Connection.send({getMessageAt:{next:positionFavorite*count, back:positionFavorite*count+count, favorite:true}});
+						break;
+					case "closeState":
+						if(positionClosed == 0) return;
+						positionClosed--;
+						Connection.send({getMessageAt:{next:positionClosed*count, back:positionClosed*count+count, state:3, favorite:false}});
+						break;
+				}
+			}
+			
+			protected function onClickRight(event:MouseEvent):void
+			{
+				switch(currentState){
+					case "answeredState":
+						if(answeredList.numChildren < 24 && false) return;
+						positionAnswered++;
+						Connection.send({getMessageAt:{next:positionAnswered*count, back:positionAnswered*count+count, state:2, favorite:false}});
+						break;
+					case "scheduledState":
+						if(scheduledList.numChildren < 24 && false) return;
+						positionScheduled++;
+						Connection.send({getMessageAt:{next:positionScheduled*count, back:positionScheduled*count+count, state:1, favorite:false}});
+						break;
+					case "favoriteState":
+						if(favoriteList.numChildren < 24 && false) return;
+						positionFavorite++;
+						Connection.send({getMessageAt:{next:positionFavorite*count, back:positionFavorite*count+count, favorite:true}});
+						break;
+					case "closeState":
+						if(closeListList.numChildren < 24 && false) return;
+						positionClosed++;
+						Connection.send({getMessageAt:{next:positionClosed*count, back:positionClosed*count+count, state:3, favorite:false}});
+						break;
+				}
+			}
+			
+			private function setFirst():void
+			{
+				TicketGroup.scheduledGroup.SelectFirst();
+				var selected:TicketPlaceholder = TicketGroup.scheduledGroup.selected;
+				if(selected)
+				{
+					Connection.send({getMessages: {id: selected.message.id}});
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!--<fx:XMLList id="menuXML">
+				<menuitem label="сортировать">
+					<menuitem label="по времени" data="time"/>
+					<menuitem label="по названию" data="time"/>
+					<menuitem label="по типу">
+						<menuitem label="ошибка" data="error"/>
+						<menuitem label="предложение" data="proposal"/>
+						<menuitem label="партнерство" data="partnership"/>
+						<menuitem label="благодарность" data="thanks"/>
+						<menuitem label="жалоба" data="complaint"/>
+					</menuitem>
+				</menuitem>
+				<menuitem label="отображать">
+					<menuitem label="ошибка" data="error_check" type="check" toggled="true" />
+					<menuitem label="предложение" data="proposal_check" type="check" toggled="true"/>
+					<menuitem label="партнерство" data="partnership_check" type="check" toggled="true"/>
+					<menuitem label="благодарность" data="thanks_check" type="check" toggled="true"/>
+					<menuitem label="жалоба" data="complaint_check" type="check" toggled="true"/>
+				</menuitem>
+		</fx:XMLList>-->
+		<mx:XMLListCollection id="menuCollection" />
+		<s:RadioButtonGroup id="group" change="onGroupChange(event)" />
+	</fx:Declarations>
+	<s:Rect width="100%" height="100%" radiusX="3" radiusY="3">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" />
+		</s:fill>
+	</s:Rect>
+	<s:Rect width="100%" height="20" bottom="0">
+		<s:fill>
+			<s:SolidColor color="#dde7f5" />
+		</s:fill>
+	</s:Rect>
+	<s:HGroup id="radioButtonContainer" gap="0">
+		<local:RadioButtonTicket id="leftButton" tabChildren="false" tabEnabled="false" value="scheduledState" width="100%" group="{group}"  selected="true" skinClass="skin.button.RadioButtonTicketLeftSkin" toolTip="новые" />
+		<graphics:TopSeparator />
+		<local:RadioButtonTicket id="favoriteButton" tabChildren="false" tabEnabled="false" value="favoriteState" width="100%" group="{group}" skinClass="skin.button.RadioButtonTicketFavoriteSkin" toolTip="избранное" />
+		<graphics:TopSeparator />
+		<local:RadioButtonTicket id="closeButton" tabChildren="false" tabEnabled="false" value="closeState" width="100%" group="{group}" skinClass="skin.button.RadioButtonTicketCloseSkin" toolTip="закрытые" />
+		<graphics:TopSeparator />
+		<local:RadioButtonTicket id="rightButton" tabChildren="false" tabEnabled="false" value="answeredState"  width="100%" group="{group}"  skinClass="skin.button.RadioButtonTicketRightSkin" toolTip="обработанные" />
+	</s:HGroup>
+	<s:TextInput id="searchTxt"
+				 toolTip="поиск: [цифры - поиск по ИД] [текст - поиск по названиям сообщений] [history:цифры - получить историю по userId]"
+				 skinClass="skin.components.TextInputTicketSearchSkin" prompt="поиск" y="39" left="5" right="5" enter="onEnterSearch(event)"/>
+	
+	<s:Scroller id="scheduled" top="90" bottom="20" width="100%" visible.answeredState="false" visible.favoriteState="false" visible.closeState="false" horizontalScrollPolicy="off">
+		<s:VGroup id="scheduledList" gap="0" width="100%" height="100%" />
+	</s:Scroller>
+	<s:Scroller id="answered" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.favoriteState="false" visible.closeState="false" horizontalScrollPolicy="off">
+		<s:VGroup id="answeredList" gap="0" width="100%" height="100%" />
+	</s:Scroller>
+	<s:Scroller id="favorite" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.answeredState="false" visible.favoriteState="true" visible.closeState="false" horizontalScrollPolicy="off">
+		<s:VGroup id="favoriteList" gap="0" width="100%" height="100%" />
+	</s:Scroller>
+	<s:Scroller id="close" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.answeredState="false" visible.favoriteState="false" visible.closeState="true" horizontalScrollPolicy="off">
+		<s:VGroup id="closeListList" gap="0" width="100%" height="100%" />
+	</s:Scroller>
+	<mx:HRule y="70" left="0" right="0" height="2"
+			  y.answeredState="89"
+			  y.closeState="89"
+			  y.favoriteState="89" left.favoriteState="0" right.favoriteState="0"
+			  y.scheduledState="89" left.scheduledState="0" right.scheduledState="0"/>
+	<mx:HRule left="0" right="0" bottom="20"/>
+	<s:Label id="countMessage" x="10" bottom="0" color="#999999" fontSize="10"
+			 height="16"/>
+	<s:Label id="answeredCount" visible.answeredState="true" visible="false" right="10" bottom="0" height="16"
+			 color="#999999" fontSize="10" textAlign="right" />
+	<s:Label id="closeCount" visible.closeState="true" visible="false" right="10" bottom="0" height="16"
+			 color="#999999" fontSize="10" textAlign="right" />
+	<s:Label id="favoriteCount" visible.favoriteState="true" visible="false" right="10" bottom="0" height="16"
+			 color="#999999" fontSize="10" textAlign="right" />
+	<s:Label id="scheduledCount" visible.scheduledState="true" visible="false" right="10" bottom="0" height="16"
+			 color="#999999" fontSize="10" textAlign="right" />
+	
+	<s:Button visible="true" y="69" width="38" label="&gt;&gt;" buttonMode="true"
+			  click="onClickRight(event)" useHandCursor="true" includeIn="answeredState,closeState"
+			  right="0"/>
+	<s:Button visible="true" y="69" width="37" label="&lt;&lt;" buttonMode="true"
+			  click="onClickLeft(event)" useHandCursor="true" includeIn="answeredState,closeState"
+			  />
+	<s:Label id="position" includeIn="answeredState,closeState" y="74" horizontalCenter="0" text="0"
+			 text.answeredState="{positionAnswered}"
+			 text.closeState="{positionClosed}"
+			 text.favoriteState="{positionFavorite}"
+			 text.scheduledState="{positionScheduled}"/>
+</s:SkinnableContainer>

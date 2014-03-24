@@ -1,0 +1,383 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:SkinnableContainer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  xmlns:graphics="skin.graphics.*"
+					  xmlns:local="*"
+					  width="100%" height="200" 
+					  creationComplete="onComplete(event)"
+					  addedToStage="toStage(event)"
+					  skinClass="skin.container.RoundContainerSkin">
+	<s:states>
+		<s:State name="active" />
+		<s:State name="deactive" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import core.GlobalManager;
+			
+			import messages.TicketsHistoryManager;
+			
+			import mx.core.FlexGlobals;
+			
+			[Embed('assets/game.png')]
+			private static const gameClearLogo:Class;
+			
+			import messages.Message;
+			
+			import mx.events.FlexEvent;
+			
+			import net.Connection;
+			
+			import utilities.DelayTimeAction;
+			private var isInit:Boolean;
+			private var currentMessage:Message;
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				
+				var menu:ContextMenu = new ContextMenu();
+				menu.hideBuiltInItems();
+				var cm:ContextMenuItem = new ContextMenuItem("Удалить Тикет");
+				cm.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, onDeleteTicket);
+				menu.customItems.push(cm);
+				
+				socialIcon.contextMenu = menu;
+				
+				socialIcon.mouseChildren = false;
+				socialIcon.mouseEnabled = true;
+				
+				Controller.AddHandler('message', onMessage);
+				onMessage(Controller.GetValue("message") as Message);
+				
+				Controller.AddHandler("screen", onScreen);
+				onScreen(Controller.GetValue("screen") as Vector.<int>);
+			}
+			
+			private function onScreen(s:Vector.<int>):void
+			{
+				if (isInit == false)
+					return;
+				if (s == null)
+				{
+					screenList.removeAllElements();
+					return;
+				}
+				screenList.removeAllElements();
+				screenList.validateNow();
+				for each (var i:int in s)
+				{
+					var sc:ScreenShots = new ScreenShots();
+					sc.screenId = i;
+					sc.screenList = s;
+					screenList.addElement(sc);
+				}
+				screenList.validateNow();
+			}
+			
+			private function onMessage(m:Message):void
+			{
+				if (isInit == false)
+					return;
+				currentMessage = m;
+				
+				if(stage)
+				{
+					stage.removeEventListener(KeyboardEvent.KEY_DOWN, onKeyboardKeyDown);
+				}
+				
+				if (m == null)
+				{
+					title.text = "";
+					ownerName.text = "";
+					viewerId.text = "";
+					socialIcon.social = 0;
+					socialName.text = "";
+					dateCreate.text = "";
+					lastUpdate.text = "";
+					statusIcon.visible = false;
+					typeMessage.text = "";
+					gameId.text = "";
+					ticketId.text = "";
+					currentState = "deactive";
+					userId.text = "";
+					clientVersionLabel.text = "";
+					deviceNameLabel.text = "";
+					gameLogo.source = gameClearLogo;
+					viewerIdButton.visible = false;
+					userIcon.transform.colorTransform = new ColorTransform();
+					return;
+				}
+				if(stage)
+				{
+					stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyboardKeyDown);
+				}
+				viewerIdButton.visible = true;
+				gameLogo.source = Game.getIcon(m.game_id);
+				if(m.owner)
+				{
+					userId.text = String(m.owner.userid);
+					viewerId.text = m.owner.viewerid;
+					socialIcon.social = m.owner.socialid;
+					socialName.text = Social.getNameById(m.owner.socialid);
+					ownerName.text = m.owner.firstName + " " + m.owner.lastName;
+					
+				}
+				else
+				{
+					userId.text = "";
+					viewerId.text = "";
+					socialIcon.social = 0;
+					socialName.text = "";
+					ownerName.text = "";
+				}
+				
+				if(m.isDonator)
+				{
+					var t:ColorTransform = new ColorTransform();
+					t.color = 0xFFCC00;
+					userIcon.transform.colorTransform = t;
+					userIcon.toolTip = "имя - фамилия, донатор";
+				}
+				else
+				{
+					userIcon.transform.colorTransform = new ColorTransform();
+					userIcon.toolTip = "имя - фамилия";
+				}
+				
+				clientVersionLabel.text = String(m.clientVersion);
+				deviceNameLabel.text = String(m.deviceName);
+				
+				ticketId.text = m.id.toString();
+				gameId.text = Game.game(m.game_id);
+				
+				statusIcon.visible = true;
+				title.text = m.title;
+				
+				var d:Date = new Date(0, 0, 0, 0, 0, 0, 0);
+				d.time = m.createTime * 1000;
+				dateCreate.text = d.date + "/" + (d.month + 1) + "/" + d.fullYear + "-" + d.hours + ":" + minutes(d.minutes);
+				d.time = m.lastUpdate * 1000;
+				lastUpdate.text = d.date + "/" + (d.month + 1) + "/" + d.fullYear + "-" + d.hours + ":" + minutes(d.minutes);
+				if (m.state == "closed")
+				{
+					currentState = "deactive";
+				}
+				else
+				{
+					currentState = "active";
+				}
+				statusIcon.currentState = m.state;
+				typeMessage.text = Message.getType(m.type);
+			}
+			
+			private function minutes(value:int):String
+			{
+				if (value < 10)
+				{
+					return "0" + value;
+				}
+				return value.toString();
+			}
+			
+			protected function onClickCloseMessage(event:MouseEvent = null):void
+			{
+				if (isInit == false)
+					return;
+				if (currentMessage == null)
+					return;
+				if (btnCloseMessage.enabled == false)
+					return;
+				Connection.send({closeMessage: {id: currentMessage.id}});
+				btnCloseMessage.enabled = false;
+				new DelayTimeAction(enabledCloseButtonMessage, 1000);
+			}
+			
+			private function enabledCloseButtonMessage():void
+			{
+				btnCloseMessage.enabled = true;
+			}
+			
+			protected function onDeleteTicket(event:ContextMenuEvent):void
+			{
+				if (currentMessage == null)
+					return;
+				Connection.send({deleteMessage: {id: currentMessage.id}});
+			}
+			
+			protected function onClickSettingsHandler(event:MouseEvent):void
+			{
+				SettingAccess.Show();
+			}
+			
+			protected function onKeyboardKeyDown(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ESCAPE)
+				{
+					onClickCloseMessage();
+				}
+			}
+			
+			protected function toStage(event:Event):void
+			{
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyboardKeyDown);
+			}
+			
+			protected function onClickViewerIdHandler(event:MouseEvent):void
+			{
+//				Preloader.show(Preloader.LOAD_HISTORY);
+				Connection.send({getUserMessages:{viewerId:currentMessage.owner.viewerid, gameId:currentMessage.game_id, socialId:currentMessage.owner.socialid}});
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+
+	</fx:Declarations>
+	<s:Rect width="100%" height="100%" radiusX="3" radiusY="3">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" />
+		</s:fill>
+	</s:Rect>
+	<graphics:TopGraphics />
+	<mx:Label id="title"
+			  y="4"
+			  color="#747474"
+			  fontFamily="Tehoma"
+			  fontSize="14"
+			  fontWeight="bold"
+			  selectable="true"
+			  text="Метка"
+			  left="10"
+			  right="145"
+			  x="10" />
+	<local:SocialIcon id="socialIcon"
+					  x="14"
+					  y="50" />
+	<mx:Label id="socialName"
+			  x="0"
+			  y="121"
+			  width="93"
+			  height="16"
+			  color="#707070"
+			  fontSize="10"
+			  text="одноклассники"
+			  textAlign="center"
+			  selectable="true" />
+	<mx:Label id="clientVersionLabel" x="0" y="175" width="93" height="16"
+			  color="#707070" fontSize="10" selectable="true" text="0.0.0"
+			  toolTip="версия клиента"
+			  textAlign="center"/>
+	<s:Image id="userIcon"
+			 x="110"
+			 y="63"
+			 source="@Embed('assets/man.png')"
+			 toolTip="имя - фамилия" />
+	<mx:Label id="ownerName"
+			  x="135"
+			  y="63"
+			  color="#858585"
+			  fontFamily="Tahoma"
+			  fontSize="12"
+			  text="Привет Привет"
+			  selectable="true" />
+	<s:Image x="110"
+			 y="91"
+			 source="@Embed('assets/date.png')"
+			 toolTip="дата создания" />
+	<mx:Label id="dateCreate"
+			  x="135"
+			  y="91"
+			  color="#858585"
+			  fontFamily="Tahoma"
+			  text="12-12-12"
+			  selectable="true" />
+	<mx:Image x="112"
+			  y="117"
+			  width="14"
+			  source="@Embed('assets/id.png')"
+			  toolTip="идентификатор пользователя в игре" />
+	<mx:Image x="112" y="174" width="14" source="@Embed('assets/id.png')"
+			  toolTip="название устройста"/>
+	<mx:Label id="userId"
+			  x="135"
+			  y="116"
+			  color="#858585"
+			  fontFamily="Tahoma"
+			  text="123456789"
+			  selectable="true" 
+			  toolTip="идентификатор пользователя в игре"
+			  />
+	<mx:Label id="deviceNameLabel" x="135" y="173" color="#858585" fontFamily="Tahoma"
+			  selectable="true" toolTip="название устройства"
+			  text="deviceName"/>
+	<mx:Button id="viewerIdButton" x="110" y="142" width="14" buttonMode="true" chromeColor="#FFFFFF"
+			   icon="@Embed('assets/id.png')"
+			   toolTip="идентификатор пользователя в социальной сети. Нажмите, чтобы отобразить историю по пользователю"
+			   useHandCursor="true" click="onClickViewerIdHandler(event)"/>
+	<mx:Label id="viewerId" x="135" y="144" color="#858585" fontFamily="Tahoma" toolTip="идентификатор пользователя в социальной сети"
+			  selectable="true" text="123456789"/>
+	<s:Image x="302"
+			 y="91"
+			 source="@Embed('assets/date.png')"
+			 toolTip="дата последнего обновления" />
+	<mx:Label id="lastUpdate"
+			  x="331"
+			  y="91"
+			  color="#858585"
+			  fontFamily="Tahoma"
+			  text="12-12-12"
+			  selectable="true" />
+	<local:StatusIcon id="statusIcon"
+					  right="5"
+					  top="5"
+					  alpha="0.5" />
+	<s:Image x="302"
+			 y="118"
+			 source="@Embed('assets/type.png')"
+			 toolTip="тип сообщения" />
+	<mx:Label id="typeMessage"
+			  x="331"
+			  y="115"
+			  color="#858585"
+			  fontFamily="Tahoma"
+			  text="предложение"
+			  selectable="true" />
+	<s:TileGroup id="screenList"
+				 y="33"
+				 right="10"
+				 height="104"
+				 horizontalAlign="right"
+				 verticalAlign="bottom">
+	</s:TileGroup>
+	<s:Button id="btnCloseMessage"
+			  y="3"
+			  visible.deactive="false"
+			  click="onClickCloseMessage(event)"
+			  right="40"
+			  label="Закрыть"
+			  icon="@Embed('assets/prohibited.png')"
+			  useHandCursor="true"
+			  buttonMode="true" />
+	<s:Image id="gameLogo" x="109" y="37" smooth="true"
+			 source="{gameClearLogo}"
+			 width="18" height="18"/>
+	<mx:Label id="gameId"
+			  x="135"
+			  y="36"
+			  color="#858585"
+			  text="название игры"
+			  selectable="true" />
+	<mx:Text id="ticketId"
+			 x="10"
+			 y="35"
+			 width="74"
+			 color="#858585"
+			 text=""
+			 textAlign="center"
+			 toolTip="TICKET ID" />
+	<s:Button x="6" y="142" width="85" label="настройки"  useHandCursor="true" buttonMode="true"
+			  click="onClickSettingsHandler(event)" color="#878787" fontSize="10" fontStyle="normal"
+			  fontWeight="normal" lineThrough="false" textDecoration="none"/>
+</s:SkinnableContainer>

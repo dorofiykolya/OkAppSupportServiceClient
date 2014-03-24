@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="400" 
+		 creationComplete="onComplete(event)"
+		 
+		 >
+	<fx:Script>
+		<![CDATA[
+			import messages.Word;
+			
+			import mx.events.FlexEvent;
+			
+			private var _word:Word;
+			private var isInit:Boolean;
+
+			public function get word():Word
+			{
+				return _word;
+			}
+
+			public function set word(value:Word):void
+			{
+				_word = value;
+				validate();
+			}
+
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				validate();
+			}
+			
+			
+			
+			private function validate():void
+			{
+				if(isInit == false) return;
+				if(_word == null) return;
+				from.text = _word.from;
+				txt.text = _word.message;
+				var d:Date = new Date(0,0,0,0,0,0,0);
+				d.time = _word.time * 1000;
+				time.text = d.date + "/"+(d.month + 1)+"/"+d.fullYear+"-"+d.hours+":"+frmt(d.minutes)+":"+frmt(d.seconds);
+				if(_word.type == "response"){
+					response.visible = true;
+					from.setStyle('color', 0x2a7b99);
+					time.setStyle('color', 0x2a7b99);
+					txt.setStyle('color', 0x2a7b99);
+				}
+			}
+			
+			private function frmt(value:int):String{
+				if(value < 10){
+					return "0" + value;
+				}
+				return value.toString();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<s:Rect id="response" visible="false" width="100%" height="100%">
+		<s:fill>
+			<s:SolidColor color="#4AA1FE" alpha="0.05" />
+		</s:fill>
+	</s:Rect>
+		<s:Image x="5" y="15" source="@Embed('assets/man.png')"/>
+		<mx:Label id="from" selectable="true" x="27" y="17" text="Метка" color="#858585" fontFamily="Tahoma"/>
+		<!--<s:RichEditableText 
+			editable="false" 
+			id="txt"
+			x="0"
+			y="37"
+			width="400"
+			color="#373737"
+			paddingTop="2"
+			text=""
+			/>-->
+		<mx:Text id="txt"
+				 x="0"
+				 y="37"
+				 width="400"
+				 color="#373737"
+				 paddingTop="2"
+				 text=""
+				 />
+		<s:Image y="15" right="3" source="@Embed('assets/date.png')"/>
+		<mx:Label selectable="true" id="time" y="17" right="18" color="#858585" fontFamily="Tahoma" text="Метка"/>
+</s:Group>

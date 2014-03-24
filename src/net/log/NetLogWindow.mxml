@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml"
+				  width="100%"
+				  height="100%"
+				  backgroundColor="0"
+				  backgroundAlpha="0.8"
+				  creationComplete="onComplete(event)"
+				  >
+	<mx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.utils.ObjectUtil;
+			
+			public static var windows:Vector.<net.log.NetLogWindow> = new Vector.<net.log.NetLogWindow>();
+			
+			private var isVisible:Boolean;
+			public function show():void {
+				if (isVisible) return;
+				NetLogManager.container.addChild(this);
+				windows.push(this);
+				isVisible = true;
+			}
+			
+			public function hide():void {
+				if (isVisible == false) return;
+				if (NetLogManager.container.contains(this)) {
+					NetLogManager.container.removeChild(this);
+					var i:int = windows.indexOf(this);
+					if (i != -1) {
+						windows.splice(i, 1);
+					}
+				}
+				isVisible = false;
+			}
+			
+			private var _info:NetLog;
+			
+			public function setInfo(n:NetLog):void{
+				_info = n;
+			}
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				title.text = _info.type + "   " + _info.name;
+				var o:Object = _info.object;
+				var arr:Array = [];
+				
+				for(var s:String in o){
+					var n:NetLog = new NetLog();
+					if(o[s] is String){
+						n.type = "String";
+						n.value = o[s];
+					}else if(o[s] is Number){
+						n.type = "Number";
+						n.value = o[s];
+					}else if(o[s] is Array){
+						n.type = "Array";
+						n.value = "[Array]";
+					}else if(o[s] is Boolean){
+						n.type = "Boolean";
+						n.value = o[s];
+					}else{
+						n.type = "Object";
+						n.value = "[Object]";
+						if (o[s] is Object) {
+							if(o[s]['name'] != undefined){
+								n.secondName = o[s]['name'];
+							}else {
+								n.secondName = 'undefined';
+							}
+						}
+						
+					}
+					n.name = s;
+					n.object = o[s];
+					
+					arr.push(n);
+					
+				}
+				dataGrid.dataProvider = arr;
+			}
+			
+			protected function onDataGridChange(event:ListEvent):void
+			{
+				var logObj:NetLog = dataGrid.selectedItem as NetLog;
+				if(logObj.type == "String"){
+					txt.text = String(logObj.object);
+				}else if(logObj.type == "Number"){
+					txt.text = Number(logObj.object).toString();
+				}else if(logObj.type == "Boolean"){
+					txt.text = Boolean(logObj.object).toString();
+				}else{
+					var w:NetLogWindow = new NetLogWindow();
+					w.show();
+					w.setInfo(logObj);
+				}
+			}
+			
+			protected function onRefresh(event:MouseEvent):void
+			{
+				title.text = _info.type + "   " + _info.name;
+				var o:Object = _info.object;
+				var arr:Array = [];
+				
+				for(var s:String in o){
+					var n:NetLog = new NetLog();
+					if(o[s] is String){
+						n.type = "String";
+						n.value = o[s];
+					}else if(o[s] is Number){
+						n.type = "Number";
+						n.value = o[s];
+					}else if(o[s] is Array){
+						n.type = "Array";
+						n.value = "[Array]";
+						if (o[s] != null) {
+							if(o[s][dataName.text] != undefined){
+								n.secondName = o[s][dataName.text];
+							}else{
+								n.secondName = 'undefined';
+							}
+							if(o[s][dataName2.text] != undefined){
+								n.thirdName = o[s][dataName2.text];
+							}else{
+								n.thirdName = 'undefined';
+							}
+						}
+					}else if(o[s] is Boolean){
+						n.type = "Boolean";
+						n.value = o[s];
+					}else{
+						n.type = "Object";
+						n.value = "[Object]";
+						if (o[s] != null) {
+							if(o[s][dataName.text] != undefined){
+								n.secondName = o[s][dataName.text];
+							}else{
+								n.secondName = 'undefined';
+							}
+							if(o[s][dataName2.text] != undefined){
+								n.thirdName = o[s][dataName2.text];
+							}else{
+								n.thirdName = 'undefined';
+							}
+						}
+					}
+					n.name = s;
+					n.object = o[s];
+					arr.push(n);
+				}
+				dataGrid.dataProvider = arr;
+			}
+			
+		]]>
+	</mx:Script>
+	<mx:Canvas width="680" height="580" backgroundColor="#333333" borderColor="#FFFFFF"
+			   borderStyle="solid" horizontalCenter="0" horizontalScrollPolicy="off"
+			   verticalCenter="0" verticalScrollPolicy="off">
+		<mx:Button top="0" right="0" label="X"  click="{hide();}" />
+		<mx:Text id="title" x="10" y="6" width="525" height="31" color="#FFFFFF" fontSize="16" fontWeight="bold"
+				  text=""/>
+		<mx:HDividedBox x="10" y="71" width="100%" height="497">
+			<mx:DataGrid id="dataGrid" width="100%" height="100%" color="#000000" fontFamily="Verdana"
+						 fontWeight="normal" itemClick="onDataGridChange(event)"
+						 variableRowHeight="true">
+				<mx:columns>
+					<mx:DataGridColumn width="60" dataField="type" headerText="type"/>
+					<mx:DataGridColumn width="80" dataField="name" headerText="name"/>
+					<mx:DataGridColumn dataField="secondName" headerText="{dataName.text}"/>
+					<mx:DataGridColumn width="45" dataField="value" headerText="value"/>
+					<mx:DataGridColumn width="40" dataField="thirdName" headerText="{dataName2.text}"/>
+				</mx:columns>
+			</mx:DataGrid>
+			<mx:TextArea id="txt" width="235" height="100%" color="#000000" fontFamily="Verdana"
+						 fontSize="10"/>
+		</mx:HDividedBox>
+		<mx:Button x="10" y="41" label="refresh"  click="onRefresh(event)"/>
+		<mx:TextInput id="dataName" x="86" y="41" text="name"/>
+		<mx:TextInput id="dataName2" x="254" y="41" text="id"/>
+	</mx:Canvas>
+	
+</mx:Canvas>

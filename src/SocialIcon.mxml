@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Image xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 currentState="clear"
+		 smooth="true"
+		 smoothingQuality="high"
+		 source.mailru="{SocialIconManager.mailru}"
+		 source.odnoklassniki="{SocialIconManager.odnoklassniki}"
+		 source.vkontakte="{SocialIconManager.vkontakte}"
+		 source.facebook="{SocialIconManager.facebook}"
+		 source.android="{SocialIconManager.android}"
+		 source.appstore="{SocialIconManager.appstore}"
+		 source.qzone="{SocialIconManager.qzone}"
+		 source.clear="{SocialIconManager.clear}"
+		 >
+		 
+	<s:states>
+		<mx:State name="clear" />
+		<s:State name="vkontakte" />
+		<s:State name="mailru" />
+		<s:State name="odnoklassniki" />
+		<s:State name="facebook" />
+		<s:State name="android" />
+		<s:State name="appstore" />
+		<s:State name="qzone" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			
+			private var _social:int = 1;
+			public function set social(v:int):void {
+				switch(v) {
+					case Social.VKONTAKTE:
+						_social = v;					
+						currentState = "vkontakte";
+						return;
+					case Social.MAILRU:
+						_social = v;
+						currentState = "mailru";
+						return;
+					case Social.ODNOKLASSNIKI:
+						_social = v;
+						currentState = "odnoklassniki";
+						return;
+					case Social.FACEBOOK:
+						_social = v;	
+						currentState = "facebook";
+						return;
+					case Social.ANDROID:
+						_social = v;	
+						currentState = "android";
+						return;
+					case Social.APPSTORE:
+						_social = v;	
+						currentState = "appstore";
+						return;
+					case Social.QZone:
+						_social = v;	
+						currentState = "qzone";
+						return;
+				}
+				_social = 0;
+				currentState = "clear";
+			}
+			public function get social():int {
+				return _social;
+			}
+		]]>
+	</fx:Script>
+</s:Image>

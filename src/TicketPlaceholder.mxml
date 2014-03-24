@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%"
+		 height="40"
+		 creationComplete="onComplete(event)"
+		 currentState="normal"
+		 click="onClick(event)"
+		 rollOver="onRollOver(event)"
+		 rollOut="onRollOut(event)"
+		 tabChildren="false">
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="selected" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import core.GlobalManager;
+			
+			import flash.events.ContextMenuEvent;
+			import flash.filters.*;
+			import flash.ui.ContextMenu;
+			import flash.ui.ContextMenuItem;
+			
+			import messages.Message;
+			
+			import mx.events.FlexEvent;
+			
+			import net.Connection;
+			
+			import spark.components.Image;
+			
+			[Embed(source="assets/favorite_true.png")]
+			private static const _favoriteTrue:Class
+			[Embed(source="assets/favorite_false.png")]
+			private static const _favoriteFalse:Class
+			
+			import utilities.Debug;
+			
+			private static const clearColorTransform:ColorTransform = new ColorTransform();
+			private static const yellowColorTransform:ColorTransform = new ColorTransform(0xFF / 255, 0xCC /255, .5);
+			private static const filter:Array = [new GlowFilter(0x256EB8, 1, 5, 5, 2, 3, true), new DropShadowFilter(3, 90, 0, 1, 3, 3, 0.16, 3, true)];
+			private var _message:Message;
+			private var _selected:Boolean;
+			private var _favorite:Boolean;
+			private var _group:TicketGroup;
+			private var isInit:Boolean;
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				
+				var menu:ContextMenu = new ContextMenu();
+				menu.hideBuiltInItems();
+				var cm:ContextMenuItem = new ContextMenuItem("Удалить Тикет"); 
+				cm.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, onDeleteTicket);
+				menu.customItems.push(cm);
+				
+				contextMenu = menu;
+				
+				mouseChildren = true;
+				validate();
+			}
+			
+			public function set group(g:TicketGroup):void
+			{
+				_group = g;
+				if (_group)
+				{
+					_group.Add(this);
+				}
+			}
+			
+			public function get group():TicketGroup
+			{
+				return _group;
+			}
+			
+			public function set selected(v:Boolean):void
+			{
+				if (_selected == v)
+					return;
+				
+				_selected = v;
+				if (_group == null)
+					return;
+				if (v)
+				{
+					_group.Select(this);
+				}
+				else
+				{
+					_group.Unselect(this);
+				}
+			}
+			
+			public function get selected():Boolean
+			{
+				return _selected;
+			}
+			
+			public function set message(m:Message):void
+			{
+				_message = m;
+				validate();
+			}
+			
+			public function get message():Message
+			{
+				return _message;
+			}
+			
+			public function select():void
+			{
+				_selected = true;
+				currentState = 'selected';
+				filters = filter;
+				onRollOut(null);
+				Controller.SetValue("message", _message);
+				Controller.Invoke("message", _message);
+			
+				//Controller.Invoke("test"); 
+			}
+			
+			public function unselect():void
+			{
+				_selected = false;
+				currentState = 'normal';
+				filters = [];
+			}
+			
+			public function set favorite(v:Boolean):void
+			{
+				if (v == _favorite)
+					return;
+				_favorite = v;
+				if (v)
+				{
+					favoriteImage.source = _favoriteTrue;
+				}
+				else
+				{
+					favoriteImage.source = _favoriteFalse;
+				}
+			
+			}
+			
+			public function get favorite():Boolean
+			{
+				return _favorite;
+			}
+			
+			protected function onClick(event:MouseEvent):void
+			{
+				if (event.target == favoriteImage)
+				{
+					var fav:Boolean = !_favorite;
+					Connection.send({setFavorite: {id: _message.id, type: fav}});
+					return;
+				}
+				Connection.send({getMessages: {id: _message.id}});
+				selected = true;
+			}
+			
+			private function validate():void
+			{
+				if (isInit == false)
+					return;
+				title.text = _message.title;
+				type.text = Message.getType(_message.type);
+				
+				if(_message.isDonator)
+				{
+					transform.colorTransform = yellowColorTransform;
+				}
+				else
+				{
+					transform.colorTransform = clearColorTransform;
+				}
+				
+				
+				var d:Date = new Date(0, 0, 0, 0, 0, 0, 0);
+				d.time = _message.lastUpdate * 1000;
+				time.text = d.date + "/" + (d.month + 1) + "/" + d.fullYear + "-" + d.hours + ":" + minutes(d.minutes);
+				favorite = _message.favorite;
+			}
+			
+			private function minutes(value:int):String {
+				if (value < 10) {
+					return "0" + value;
+				}
+				return value.toString();
+			}
+			
+			protected function onRollOver(event:MouseEvent = null):void
+			{
+				if (_selected)
+					return;
+				overRect.visible = true;
+			}
+			
+			protected function onRollOut(event:MouseEvent = null):void
+			{
+				overRect.visible = false;
+			}
+			
+			protected function onDeleteTicket(event:ContextMenuEvent):void
+			{
+				if(_message == null) return;
+				Connection.send({deleteMessage:{id:_message.id}});
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<s:Rect left="0"
+			right="0"
+			height="40"
+			includeIn="normal">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" />
+		</s:fill>
+	</s:Rect>
+	<s:Rect left="0"
+			right="0"
+			height="40"
+			includeIn="selected">
+		<s:fill>
+			<s:LinearGradient rotation="-90">
+				<s:GradientEntry color="#3D81F3" />
+				<s:GradientEntry color="#4AA1FE" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect id="overRect"
+			left="0"
+			right="0"
+			height="40"
+			includeIn="normal"
+			visible="false"
+			alpha="0.2">
+		<s:fill>
+			<s:LinearGradient rotation="-90">
+				<s:GradientEntry color="#3D81F3" />
+				<s:GradientEntry color="#4AA1FE" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Image id="favoriteImage"
+			 left="10"
+			 alpha="0.5"
+			 alpha.selected="1"
+			 buttonMode="true"
+			 mouseChildren="false"
+			 mouseEnabled="true"
+			 smooth="true"
+			 source="{_favoriteFalse}"
+			 useHandCursor="true"
+			 verticalCenter="0"
+			 left.normal="5"
+			 width.normal="16"
+			 height.normal="16"
+			 verticalCenter.normal="-8" />
+	<s:Label id="title" x="40" y="5" click="onClick(event)" fontFamily="Tahoma" fontSize="16"
+			 mouseChildren="false" mouseEnabled="true" text="Заголовок"
+			 x.normal="26" y.normal="5" color.normal="0" fontSize.normal="14"
+			 fontWeight.normal="normal"
+			 color.selected="#FFFFFF" fontSize.selected="14"/>
+	<s:Label id="type" x="40" bottom="4" fontSize="10" mouseChildren="false" mouseEnabled="false"
+			 text="ошибка"
+			 x.normal="26" bottom.normal="4" color.normal="#474747" fontWeight.normal="bold"
+			 color.selected="#FFFFFF" fontWeight.selected="bold"/>
+	<s:Label id="time"
+			 bottom="4"
+			 fontSize="10"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 text="11.11.11-20.10.2012"
+			 right="4"
+			 color.normal="#777777"
+			 color.selected="#FFFFFF" />
+	<s:Image includeIn="normal"
+			 left="11"
+			 bottom="4"
+			 width="10"
+			 height="10"
+			 smooth="true"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 smoothingQuality="high"
+			 source="@Embed('assets/type.png')" />
+</s:Group>

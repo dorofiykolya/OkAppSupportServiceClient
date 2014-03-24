@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:fb="http://ns.adobe.com/flashbuilder/2009"
+		height="31" 
+		width="100%" xmlns:graphics="skin.graphics.*"
+		mouseChildren="false" mouseEnabled="false" tabChildren="false" tabEnabled="false"
+		focusEnabled="false"
+		>
+	<fx:Metadata>[HostComponent("RadioButtonTicket")]</fx:Metadata>
+	<s:states>
+		<s:State name="up" stateGroups="upStates" />
+		<s:State name="over" stateGroups="upStates" />
+		<s:State name="down" stateGroups="upStates" />
+		<s:State name="disabled" stateGroups="disabledStates" />
+		<s:State name="upAndSelected" stateGroups="selectedStates" />
+		<s:State name="overAndSelected" stateGroups="selectedStates" />
+		<s:State name="downAndSelected" stateGroups="selectedStates" />
+		<s:State name="disabledAndSelected" stateGroups="disabledStates, selectedStates" />
+	</s:states>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<!--<s:Graphic width="100%" includeIn="upStates,disabledStates" version="2.0" scaleGridLeft="5" scaleGridRight="32" scaleGridTop="4" scaleGridBottom="28">
+		<s:Path winding="nonZero" y="0.334" data="M 0 0 L 33 0 C 34.657 0 36 1.344 36 3 L 36 31 L 0 31 L 0 0 Z">
+			<s:fill>
+				<s:LinearGradient rotation="90" scaleX="31" x="18" y="0">
+					<s:GradientEntry color="#F1F1F1" ratio="0"/>
+					<s:GradientEntry color="#DADADA" ratio="1"/>
+				</s:LinearGradient>
+			</s:fill>
+		</s:Path>
+	</s:Graphic>-->
+	<graphics:TopGraphicsRight width="100%" includeIn="upStates,disabledStates" />
+	<s:Graphic width="100%" includeIn="selectedStates" version="2.0" scaleGridLeft="2" scaleGridRight="208" scaleGridTop="4" scaleGridBottom="30">
+		<s:Path winding="nonZero" x="-0.5" y="-0.166" data="M 0.5 0.5 L 210.5 0.5 C 212.157 0.5 213.5 1.844 213.5 3.5 L 213.5 31.5 L 0.5 31.5 L 0.5 0.5 Z">
+			<s:fill>
+				<s:SolidColor color="#FFFFFF"/>
+			</s:fill>
+		</s:Path>
+	</s:Graphic>
+	<s:HGroup width="100%" height="31" gap="0" verticalAlign="middle" horizontalAlign="center" >
+		<s:BitmapImage alpha="0.8" source="@Embed(source='../../assets/ok.png')" width="24" height="24" scaleMode="letterbox" smooth="true" smoothingQuality="high" />
+		<s:Label text="Обработаные" fontFamily="Tahoma" color="#636363" paddingTop="2" fontWeight="bold" includeIn="selectedStates" />
+	</s:HGroup>
+</s:Skin>

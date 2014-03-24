@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:MXTreeItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+					  xmlns:s="library://ns.adobe.com/flex/spark"
+					  xmlns:mx="library://ns.adobe.com/flex/mx"
+					  dataChange="onDataChange(event)" rollOverColor="0"
+					  focusColor="#16c5fe">
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.treeClasses.MXTreeItemRenderer;
+			import mx.events.FlexEvent;
+			import mx.utils.ObjectUtil;
+			
+			protected function checkBox_changeHandler(event:Event):void
+			{
+				treeListData.item.@hide = String(Boolean(checkBox.selected == false));
+			}
+			
+			protected function onDataChange(event:FlexEvent):void
+			{
+				checkBox.selected = Boolean(treeListData.item.@hide == "false");
+				if(treeListData.item.name() == "social")
+				{
+					ico.source = Social.getIcon(int(treeListData.item.@id));
+				}
+				else if(treeListData.item.name() == "game")
+				{
+					ico.source = Game.getIcon(int(treeListData.item.@id));
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<s:states>
+		<s:State name="normal" />            
+		<s:State name="hovered" />
+		<s:State name="selected" />
+	</s:states>
+	
+	<s:HGroup left="0" right="0" top="0" bottom="0" verticalAlign="middle"
+			  rollOverColor.normal="#000000">
+		<s:Rect id="indentationSpacer" width="{treeListData.indent}" percentHeight="100" alpha="0">
+			<s:fill>
+				<s:SolidColor color="0xFFFFFF" />
+			</s:fill>
+		</s:Rect>
+		<s:Group id="disclosureGroup">
+			<s:BitmapImage source="{treeListData.disclosureIcon}" visible="{treeListData.hasChildren}" />
+		</s:Group>
+		<s:CheckBox id="checkBox"  change="checkBox_changeHandler(event)" visible="{treeListData.item.name() == 'language'}" />
+		<s:BitmapImage id="ico" source="{treeListData.icon}" width="20" height="20" verticalCenter="0" smooth="true" smoothingQuality="high" />
+		<s:Label id="labelField" color="#FFFFFF" text="{treeListData.label}" paddingTop="2"/>
+	</s:HGroup>
+</s:MXTreeItemRenderer>

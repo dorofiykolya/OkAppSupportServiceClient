@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="400" 
+		 maxHeight="350"
+		 minHeight="100"
+		 currentState="normal"
+		 creationComplete="onComplete(event)"
+		 >
+	<s:states>
+		<s:State name="focused"/>
+		<s:State name="normal"/>
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import System.Async.DelayAction;
+			
+			import core.GlobalManager;
+			
+			import flash.events.Event;
+			import flash.events.KeyboardEvent;
+			import flash.events.MouseEvent;
+			import flash.events.TextEvent;
+			import flash.filters.*;
+			import flash.ui.Keyboard;
+			
+			import flashx.textLayout.edit.EditManager;
+			import flashx.undo.UndoManager;
+			
+			import messages.Message;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			
+			import net.Connection;
+			
+			import spark.skins.spark.FocusSkin;
+			
+			import utilities.Debug;
+			import utilities.KeyboardKeyCode;
+			
+			private static var undo:UndoManager;
+			private static var edit:EditManager;
+			private var _inFocus:Boolean;
+			
+			protected function onKeyDown(e:KeyboardEvent):void
+			{
+				if (e.keyCode == Keyboard.ENTER && e.shiftKey) {
+					e.preventDefault();
+					onSend();
+				}
+			}
+			
+			protected function onSend(event:Event = null):void
+			{
+				var m:Message = Controller.GetValue("message") as Message;
+				if(m == null) {
+					Alert.show("Ошибка, при отправке, Не выбран тикет для отправки");
+					Debug.Trace(Debug.PATH,"Ошибка, при отправке, Не выбран тикет для отправки");
+					return;
+				}
+				var str:String = txt.text;
+				txt.text = "";
+				
+				Connection.send( { response: { id:m.id, message:str }} );
+			}
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				undo = new UndoManager();
+				undo.undoAndRedoItemLimit = 300;
+				
+				edit = new EditManager(undo);
+				
+				txt.textFlow.interactionManager = edit;
+				
+				txt.addEventListener(FocusEvent.FOCUS_IN, onFocusIn);
+				txt.addEventListener(FocusEvent.FOCUS_OUT, onFocusOut);
+				
+				addEventListener(Event.ACTIVATE, onActive);
+				
+				Controller.AddHandler("message", onMessage);
+				onMessage(Controller.GetValue("message") as Message);
+			}
+			
+			private function onMessage(m:Message):void
+			{
+				if(m == null) 
+				{
+					visible = false;
+				}
+				else 
+				{
+					visible = true;
+					txt.setFocus();
+				}
+			}
+			
+			protected function onFocusIn(event:FocusEvent):void
+			{
+				_inFocus = true;
+			}
+			
+			protected function onFocusOut(event:FocusEvent):void
+			{
+				_inFocus = false;
+			}
+			
+			protected function onActive(event:Event):void
+			{
+				if(visible)
+				{
+					txt.setFocus();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	
+	<s:Group width="400" height="100%" filters="{[new DropShadowFilter(2,90,0,0.3,3,3,0.7,1,true)]}"> 
+		<s:Rect left="2" right="2" top="4" bottom="4" radiusX="5" radiusY="5">
+			<s:fill>
+				<s:SolidColor color="#FFFFFF" />
+			</s:fill>
+			<s:stroke>
+				<s:SolidColorStroke color.normal="#cbcbcb" color.focused="#cbddf2" pixelHinting="false" weight="1" weight.focused="2" />
+			</s:stroke>
+		</s:Rect>
+		<s:Rect left="3" right="3" y="5" height="20" topLeftRadiusX="5" topRightRadiusX="5" topLeftRadiusY="5" topRightRadiusY="5">
+			<s:fill>
+				<s:SolidColor color="#e7f3f8" color.focused="#cbddf2" />
+			</s:fill>
+		</s:Rect>
+		<s:Scroller left="2" right="2" bottom="4" horizontalScrollPolicy="off"
+					 top="24">
+			<s:RichEditableText id="txt" 
+								color="#8BB7E8" 
+								focusIn="{currentState = 'focused'}"
+								focusOut="{currentState = 'normal'}" 
+								focusSkin="{null}"
+								fontFamily="Tahoma"
+								fontLookup="auto"
+								text=""
+								color.focused="#202020" 
+								paddingBottom="5"
+								paddingLeft="5" 
+								paddingRight="5"
+								paddingTop="10" 
+								keyDown="onKeyDown(event)"
+								
+								/>
+		</s:Scroller>
+		<!--<s:TextArea id="txt" left="3" right="3" bottom="5" horizontalScrollPolicy="off"
+					top="24" borderVisible="false"
+					focusAlpha="0" color="#8BB7E8" 
+					focusIn="{currentState = 'focused'}"
+					focusOut="{currentState = 'normal'}" focusSkin="{null}"
+					fontFamily="Tahoma"
+					text=""
+					color.focused="#202020" paddingBottom="5"
+					paddingLeft="5" paddingRight="5"
+					paddingTop="10" keyDown="onKeyDown(event)"/>-->
+	</s:Group>
+	<s:Button id="btnSend" skinClass="ButtonSendSkin" buttonMode="true" useHandCursor="true" top="5" right="-30" toolTip="отправить (SHIFT+ENTER)" click="onSend(event)" />
+</s:Group>

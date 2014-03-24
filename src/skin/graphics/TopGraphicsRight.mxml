@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" 
+		 width="100%" height="31"
+		 >
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<s:Rect width="100%" height="31" topLeftRadiusX="0" topLeftRadiusY="0" topRightRadiusX="3" topRightRadiusY="3" bottomLeftRadiusX="0" bottomLeftRadiusY="0" bottomRightRadiusX="0" bottomRightRadiusY="0">
+		<s:fill>
+			<s:LinearGradient rotation="90">
+				<s:GradientEntry color="#f1f1f1" />
+				<s:GradientEntry color="#dadada" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect y="1" left="0" right="3"  height="1">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" />
+		</s:fill>
+	</s:Rect>
+	<s:Rect y="31" width="100%" height="1">
+		<s:fill>
+			<s:SolidColor color="#cbcbcb" />
+		</s:fill>
+	</s:Rect>
+</s:Group>
