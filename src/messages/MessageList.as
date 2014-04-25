@@ -1,12 +1,9 @@
 package messages
 {
-	import System.Collections.Sort.QuickSort;
 	
 	import events.MessageEvent;
 	
-	import flash.events.Event;
 	import flash.events.EventDispatcher;
-	import flash.system.System;
 	import flash.utils.Dictionary;
 	
 	[Event(name="messageCountChange",type="events.MessageEvent")]
@@ -47,6 +44,7 @@ package messages
 		
 		public static function Remove(m:Message):void
 		{
+			trace('MessageList -> Remove ' + m.id);
 			delete _dictionary[m.id];
 			var i:int = _list.indexOf(m);
 			if (i != -1)
@@ -60,6 +58,7 @@ package messages
 		
 		public static function RemoveById(id:uint):void
 		{
+			trace('MessageList -> RemoveById ' + id);
 			var m:Message = _dictionary[id];
 			if (m == null)
 				return;
@@ -74,6 +73,7 @@ package messages
 		}
 		
 		public static function RemoveStateMessage(state:String):void {
+			trace('MessageList -> RemoveStateMessage ' + state);
 			var evt:MessageEvent = new MessageEvent(MessageEvent.MESSAGE_REMOVE_STATE);
 			evt.value = state;
 			_event.dispatchEvent(evt);
@@ -94,9 +94,11 @@ package messages
 		public static function Update(m:Message = null):void
 		{
 			if (m == null) {
+				//trace('MessageList -> Update');
 				_event.dispatchEvent(new MessageEvent(MessageEvent.MESSAGE_UPDATE_LIST));
 				return
 			}
+			//trace('MessageList -> Update ' + m.id);
 			var mes:Message = _dictionary[m.id];
 			if (mes == null)
 			{
@@ -192,12 +194,14 @@ package messages
 		
 		public static function Reset():void
 		{
+			trace('MessageList -> Reset');
 			_dictionary = new Dictionary();
 			_list.length = 0;
 			ResetCount();
 		}
 		
 		public static function ResetCount():void {
+			trace('MessageList -> ResetCount');
 			_messageCount = 0;
 			_countAnswered = 0;
 			_countClosed = 0;

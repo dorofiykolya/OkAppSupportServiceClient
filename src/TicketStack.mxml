@@ -4,7 +4,7 @@
 				   xmlns:mx="library://ns.adobe.com/flex/mx"
 				   xmlns:button="skin.button.*"
 				   height="100%"
-				   width="250"
+				   width="276"
 				   minWidth="250"
 				   maxWidth="500" 
 				   skinClass="skin.container.RoundContainerSkin"
@@ -15,42 +15,43 @@
 				   xmlns:graphics="skin.graphics.*"
 				   >
 	<s:states>
-		<s:State name="answeredState" />
-		<s:State name="scheduledState" />
-		<s:State name="favoriteState" />
-		<s:State name="closeState" />
+		<s:State name="answeredState" stateGroups="mesGroup" />
+		<s:State name="scheduledState"  stateGroups="mesGroup" />
+		<s:State name="favoriteState"  stateGroups="mesGroup" />
+		<s:State name="closeState"  stateGroups="mesGroup" />
+		<s:State name="moderatorState" stateGroups="modGroup"/>
 	</s:states>
+	<fx:Metadata>
+		[Event(name="changeGroup", type="events.StateChange")] 
+    </fx:Metadata>
 	<fx:Script>
 		<![CDATA[
-			import System.Text.StringUtil;
-			
-			import events.MessageEvent;
-			
+			import events.StateChange;
 			import flash.events.Event;
 			import flash.events.MouseEvent;
-			import flash.filters.GlowFilter;
-			
-			import messages.Message;
-			import messages.MessageList;
 			
 			import mx.collections.XMLListCollection;
-			import mx.controls.Menu;
-			import mx.controls.TextInput;
-			import mx.controls.Tree;
 			import mx.controls.menuClasses.MenuBarItem;
-			import mx.controls.treeClasses.DefaultDataDescriptor;
 			import mx.core.UIComponent;
 			import mx.events.FlexEvent;
 			import mx.events.MenuEvent;
 			import mx.events.ResizeEvent;
-			
-			import net.Connection;
-			
-			import skin.graphics.BlueRectangleSkin;
-			import skin.graphics.GrayRectangleSkin;
+			import mx.events.StateChangeEvent;
 			
 			import spark.components.Group;
 			import spark.components.VGroup;
+			
+			import System.Text.StringUtil;
+			
+			import events.MessageEvent;
+			import events.ModerEvent;
+			
+			import messages.Message;
+			import messages.MessageList;
+			import messages.Moder;
+			import messages.ModerList;
+			
+			import net.Connection;
 			
 			import utilities.Debug;
 			import utilities.SafeInvoke;
@@ -59,6 +60,7 @@
 			public static const SCHEDULED_STATE:String = "scheduledState";
 			public static const FAVORITE_STATE:String = "favoriteState";
 			public static const CLOSE_STATE:String = "closeState";
+			public static const MODER_STATE:String = "moderatorState";
 			
 			private var isInit:Boolean;
 			
@@ -70,6 +72,8 @@
 			private static var positionScheduled:int;
 			[Bindable]
 			private static var positionFavorite:int;
+			[Bindable]
+			private static var positionModerator:int;
 			
 			private static var count:int = 20;
 			
@@ -86,9 +90,15 @@
 				MessageList.addListener(MessageEvent.MESSAGE_REMOVE_STATE, onMessageRemvoeState);
 				MessageList.addListener(MessageEvent.MESSAGE_REMOVE, onMessageRemove);
 				
+				ModerList.addListener(ModerEvent.MODER_ADD, onModerAdd);
+				ModerList.addListener(ModerEvent.MODER_COUNT_CHANGE, onModerCountChange);
+				ModerList.addListener(ModerEvent.MODER_UPDATE, onModerUpdate);
+				ModerList.addListener(ModerEvent.MODER_UPDATE_LIST, onModerUpdateList);
+				
 				onMessageCountChange(null);
 				
 				onMessageUpdateList(null);
+				onModerUpdateList(null);
 				
 				validateRadioButton();
 			}
@@ -185,7 +195,10 @@
 			protected function onGroupChange(event:Event):void
 			{
 				validateRadioButton();
+				
+				var previousState:String = currentState;
 				currentState = group.selectedValue as String;
+				
 				resetSearchChildren();
 				switch(currentState){
 					case "answeredState":
@@ -210,6 +223,15 @@
 						Controller.SetValue("message", null);
 						Controller.SetValue("messages", null);
 						Controller.Invoke("message", null);
+					case "moderatorState":
+						ModerGroup.moderGroup.UnselectCurrent();
+						Controller.SetValue("moder", null);
+						Controller.Invoke("moder", null);
+				}
+				
+				if (currentState == "moderatorState" || currentState != "moderatorState" && previousState == "moderatorState" )
+				{
+					dispatchEvent(new StateChange(StateChange.CHANGE_GROUP, (currentState == "moderatorState") ? "moderState" : "messageState"));
 				}
 			}
 			
@@ -220,53 +242,81 @@
 					rightButton.useHandCursor = true;
 					favoriteButton.useHandCursor = true;
 					closeButton.useHandCursor = true;
+					moderatorButton.useHandCursor = true;
 					rightButton.toolTip = "обработаные";
 					leftButton.toolTip = "";
 					closeButton.toolTip = "закрытые";
 					favoriteButton.toolTip = "избранное";
-					leftButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					moderatorButton.toolTip = "модераторы";
+					leftButton.width = radioButtonContainer.width - 37 - 37 - 37 - 37;
 					favoriteButton.width = 36;
 					rightButton.width = 36;
 					closeButton.width = 36;
+					moderatorButton.width = 36;
 				}else if(group.selection == rightButton){
 					leftButton.useHandCursor = true;
 					rightButton.useHandCursor = false;
 					favoriteButton.useHandCursor = true;
 					closeButton.useHandCursor = true;
+					moderatorButton.useHandCursor = true;
 					rightButton.toolTip = "";
 					favoriteButton.toolTip = "избранное";
 					favoriteButton.width = 36;
 					closeButton.toolTip = "закрытые";
 					leftButton.toolTip = "новые";
-					rightButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					moderatorButton.toolTip = "модераторы";
+					rightButton.width = radioButtonContainer.width - 37 - 37 - 37 - 37;
 					leftButton.width = 36;
 					closeButton.width = 36;
+					moderatorButton.width = 36;
 				}else if(group.selection == closeButton){
 					leftButton.useHandCursor = true;
 					rightButton.useHandCursor = true;
 					favoriteButton.useHandCursor = true;
 					closeButton.useHandCursor = false;
+					moderatorButton.useHandCursor = true;
 					rightButton.toolTip = "обработаные";
 					favoriteButton.toolTip = "избранное";
 					leftButton.toolTip = "новые";
 					closeButton.toolTip = "";
-					closeButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					moderatorButton.toolTip = "модераторы";
+					closeButton.width = radioButtonContainer.width - 37 - 37 - 37 - 37;
 					rightButton.width = 36;
 					leftButton.width = 36; 
 					favoriteButton.width = 36;
-				}else{
+					moderatorButton.width = 36;
+				}else if(group.selection == favoriteButton){
 					leftButton.useHandCursor = true;
 					rightButton.useHandCursor = true;
 					favoriteButton.useHandCursor = false;
 					closeButton.useHandCursor = true;
+					moderatorButton.useHandCursor = true;
 					rightButton.toolTip = "обработаные";
 					favoriteButton.toolTip = "";
 					closeButton.toolTip = "закрытые";
 					leftButton.toolTip = "новые";
-					favoriteButton.width = radioButtonContainer.width - 37 - 37 - 37;
+					moderatorButton.toolTip = "модераторы";
+					favoriteButton.width = radioButtonContainer.width - 37 - 37 - 37 - 37;
 					rightButton.width = 36;
 					leftButton.width = 36; 
 					closeButton.width = 36;
+					moderatorButton.width = 36;
+				}else if(group.selection == moderatorButton){
+					leftButton.useHandCursor = true;
+					rightButton.useHandCursor = true;
+					favoriteButton.useHandCursor = true;
+					closeButton.useHandCursor = true;
+					moderatorButton.useHandCursor = false;
+					rightButton.toolTip = "обработаные";
+					favoriteButton.toolTip = "избранные";
+					closeButton.toolTip = "закрытые";
+					leftButton.toolTip = "новые";
+					moderatorButton.toolTip = "";
+					favoriteButton.width = 36;
+					rightButton.width = 36;
+					leftButton.width = 36; 
+					closeButton.width = 36;
+					moderatorButton.width = radioButtonContainer.width - 37 - 37 - 37 - 37;
 				}
 			}
 			
@@ -322,6 +372,19 @@
 					favoriteList.addElement(t);
 				}
 				
+			}
+			
+			private function addToMODER(m:ModerPlaceholder, index:int = -1):void{
+				trace('addToMODER ' + m.id);
+				if(m.group){
+					m.group.Remove(m);
+				}
+				m.group = ModerGroup.moderGroup;
+				if(index >= 0){
+					moderatorList.addElementAt(m, index);
+					return;
+				}
+				moderatorList.addElement(m);
 			}
 			
 			protected function onEnterSearch(event:FlexEvent):void
@@ -420,6 +483,11 @@
 				addMessage(e.message);
 			}
 			
+			private function onModerAdd(e:ModerEvent):void
+			{
+				addModer(e.moder);
+			}
+			
 			private function onMessageCountChange(e:MessageEvent):void
 			{
 				countMessage.text = "Всего: " + MessageList.messageCount.toString();
@@ -427,6 +495,11 @@
 				scheduledCount.text = MessageList.countScheduled.toString();
 				favoriteCount.text = MessageList.countFavorite.toString();
 				closeCount.text = MessageList.countClosed.toString();
+			}
+			
+			private function onModerCountChange(e:ModerEvent):void
+			{
+				moderatorCount.text = ModerList.countModer.toString();
 			}
 			
 			private function onMessageFavoriteChange(e:MessageEvent):void
@@ -499,6 +572,24 @@
 				checkInfo(e.message);
 			}
 			
+			private function onModerUpdate(e:ModerEvent):void
+			{
+				var current:ModerPlaceholder; 
+				if(current == null){
+					current = ModerGroup.moderGroup.GetByMessageId(e.moder.id);
+					if(current){
+						current.group.Remove(current);
+						ModerList.countModer--;
+					}
+				}
+				if(current == null) return;
+				current.moder = e.moder;
+
+				ModerList.countModer++;
+				addToMODER(current);
+				checkModerInfo(e.moder);
+			}
+			
 			private function checkInfo(message:Message):void {
 				switch(currentState) {
 						case "answeredState":
@@ -537,15 +628,30 @@
 					}
 			}
 			
+			private function checkModerInfo(mod:Moder):void {
+				if (ModerGroup.moderGroup.selected) {
+					if (ModerGroup.moderGroup.selected.moder.id == mod.id) {
+						clearInfo();
+						getModersFromServer();
+					}
+				}
+			}
+			
 			private function clearInfo():void {
 				Controller.SetValue("messages", null);
 				Controller.SetValue("message", null);
+				Controller.SetValue("moder", null);
 				Controller.Invoke("messages", null);
 				Controller.Invoke("message", null);
+				Controller.Invoke("moder", null);
 			}
 			
 			private function getMessagesFromServer(id:int):void {
 				Connection.send( {getMessages:{id:id} } );
+			}
+			
+			private function getModersFromServer():void {
+				Connection.send( {getModerators:{} } );
 			}
 			
 			private function onMessageUpdateList(e:MessageEvent = null):void
@@ -554,15 +660,28 @@
 				TicketGroup.closedGroup.Reset();
 				TicketGroup.favoriteGroup.Reset();
 				TicketGroup.scheduledGroup.Reset();
+				ModerGroup.moderGroup.Reset();
+				
 				answeredList.removeAllElements();
 				scheduledList.removeAllElements();
+				moderatorList.removeAllElements();
 				
 				MessageList.ResetCount();
+				ModerList.ResetCount();
 				
 				var list:Vector.<Message> = MessageList.List;
 				for each (var m:Message in list) 
 				{
 					addMessage(m);
+				}
+			}
+			
+			private function onModerUpdateList(e:ModerEvent = null):void
+			{
+				var list:Vector.<Moder> = ModerList.List;
+				for each (var m:Moder in list) 
+				{
+					addModer(m);
 				}
 			}
 			
@@ -594,8 +713,16 @@
 						p = new TicketPlaceholder();
 						p.message = e;
 						addToSCHEDULED(p);
-						break; 
+						break;
 				}
+			}
+			
+			private function addModer(e:Moder):void
+			{
+				ModerList.countModer++;
+				var p:ModerPlaceholder = new ModerPlaceholder();
+				p.moder = e;
+				addToMODER(p);
 			}
 			
 			protected function onMenuClick(event:MouseEvent):void
@@ -634,6 +761,11 @@
 						positionClosed--;
 						Connection.send({getMessageAt:{next:positionClosed*count, back:positionClosed*count+count, state:3, favorite:false}});
 						break;
+					case "moderatorState":
+						if(positionModerator == 0) return;
+						positionModerator--;
+						//Connection.send({getMessageAt:{next:positionModerator*count, back:positionModerator*count+count, state:3, favorite:false}});
+						break;
 				}
 			}
 			
@@ -659,6 +791,11 @@
 						if(closeListList.numChildren < 24 && false) return;
 						positionClosed++;
 						Connection.send({getMessageAt:{next:positionClosed*count, back:positionClosed*count+count, state:3, favorite:false}});
+						break;
+					case "moderatorState":
+						if(moderatorList.numChildren < 24 && false) return;
+						positionClosed++;
+						//Connection.send({getMessageAt:{next:positionModerator*count, back:positionModerator*count+count, state:3, favorite:false}});
 						break;
 				}
 			}
@@ -716,32 +853,38 @@
 		<graphics:TopSeparator />
 		<local:RadioButtonTicket id="closeButton" tabChildren="false" tabEnabled="false" value="closeState" width="100%" group="{group}" skinClass="skin.button.RadioButtonTicketCloseSkin" toolTip="закрытые" />
 		<graphics:TopSeparator />
-		<local:RadioButtonTicket id="rightButton" tabChildren="false" tabEnabled="false" value="answeredState"  width="100%" group="{group}"  skinClass="skin.button.RadioButtonTicketRightSkin" toolTip="обработанные" />
+		<local:RadioButtonTicket id="rightButton" tabChildren="false" tabEnabled="false" value="answeredState"  width="100%" group="{group}"  skinClass="skin.button.RadioButtonTicketAnsweredSkin" toolTip="обработанные" />
+		<graphics:TopSeparator />
+		<local:RadioButtonTicket id="moderatorButton" tabChildren="false" tabEnabled="false" value="moderatorState"  width="100%" group="{group}"  skinClass="skin.button.RadioButtonTicketRightSkin" toolTip="модераторы" />
 	</s:HGroup>
-	<s:TextInput id="searchTxt"
+	<s:TextInput excludeFrom="moderatorState" id="searchTxt"
 				 toolTip="поиск: [цифры - поиск по ИД] [текст - поиск по названиям сообщений] [history:цифры - получить историю по userId]"
 				 skinClass="skin.components.TextInputTicketSearchSkin" prompt="поиск" y="39" left="5" right="5" enter="onEnterSearch(event)"/>
 	
-	<s:Scroller id="scheduled" top="90" bottom="20" width="100%" visible.answeredState="false" visible.favoriteState="false" visible.closeState="false" horizontalScrollPolicy="off">
+	<s:Scroller id="scheduled" top="90" bottom="20" width="100%" visible.answeredState="false" visible.favoriteState="false" visible.closeState="false" visible.moderatorState="false" horizontalScrollPolicy="off">
 		<s:VGroup id="scheduledList" gap="0" width="100%" height="100%" />
 	</s:Scroller>
-	<s:Scroller id="answered" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.favoriteState="false" visible.closeState="false" horizontalScrollPolicy="off">
+	<s:Scroller id="answered" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.favoriteState="false" visible.closeState="false" visible.moderatorState="false" horizontalScrollPolicy="off">
 		<s:VGroup id="answeredList" gap="0" width="100%" height="100%" />
 	</s:Scroller>
-	<s:Scroller id="favorite" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.answeredState="false" visible.favoriteState="true" visible.closeState="false" horizontalScrollPolicy="off">
+	<s:Scroller id="favorite" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.answeredState="false" visible.favoriteState="true" visible.closeState="false" visible.moderatorState="false" horizontalScrollPolicy="off">
 		<s:VGroup id="favoriteList" gap="0" width="100%" height="100%" />
 	</s:Scroller>
-	<s:Scroller id="close" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.answeredState="false" visible.favoriteState="false" visible.closeState="true" horizontalScrollPolicy="off">
+	<s:Scroller id="close" top="90" bottom="20" width="100%" visible.scheduledState="false" visible.answeredState="false" visible.favoriteState="false" visible.closeState="true" visible.moderatorState="false" horizontalScrollPolicy="off">
 		<s:VGroup id="closeListList" gap="0" width="100%" height="100%" />
+	</s:Scroller>
+	<s:Scroller id="moderator" top="37" bottom="20" width="100%" visible.scheduledState="false" visible.answeredState="false" visible.favoriteState="false" visible.closeState="false" visible.moderatorState="true" horizontalScrollPolicy="off">
+		<s:VGroup id="moderatorList" gap="0" width="100%" height="100%" />
 	</s:Scroller>
 	<mx:HRule y="70" left="0" right="0" height="2"
 			  y.answeredState="89"
 			  y.closeState="89"
+			  y.moderatorState="36"
 			  y.favoriteState="89" left.favoriteState="0" right.favoriteState="0"
 			  y.scheduledState="89" left.scheduledState="0" right.scheduledState="0"/>
 	<mx:HRule left="0" right="0" bottom="20"/>
 	<s:Label id="countMessage" x="10" bottom="0" color="#999999" fontSize="10"
-			 height="16"/>
+			 height="16" excludeFrom="moderatorState"/>
 	<s:Label id="answeredCount" visible.answeredState="true" visible="false" right="10" bottom="0" height="16"
 			 color="#999999" fontSize="10" textAlign="right" />
 	<s:Label id="closeCount" visible.closeState="true" visible="false" right="10" bottom="0" height="16"
@@ -749,6 +892,8 @@
 	<s:Label id="favoriteCount" visible.favoriteState="true" visible="false" right="10" bottom="0" height="16"
 			 color="#999999" fontSize="10" textAlign="right" />
 	<s:Label id="scheduledCount" visible.scheduledState="true" visible="false" right="10" bottom="0" height="16"
+			 color="#999999" fontSize="10" textAlign="right" />
+	<s:Label id="moderatorCount" visible.moderatorState="true" visible="false" right="10" bottom="0" height="16"
 			 color="#999999" fontSize="10" textAlign="right" />
 	
 	<s:Button visible="true" y="69" width="38" label="&gt;&gt;" buttonMode="true"

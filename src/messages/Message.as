@@ -23,6 +23,15 @@ package messages
 			return "...";
 		}
 		
+		public static function getState(state:String):String{
+			switch(state){
+				case STATE_SCHEDULED: return "обработанные";
+				case STATE_ANSWERED: return "предложение";
+				case STATE_CLOSED: return "партнерство";
+			}
+			return "...";
+		}
+		
 		public var id:uint;
 		public var title:String;
 		public var game_id:int;

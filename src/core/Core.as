@@ -78,9 +78,9 @@ package core
 			GlobalManager.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyboardDown);
 			
 			//connect.connect('188.93.22.134', 8080);
-			connect.connect('support.restr.net', 8090);
+			//connect.connect('support.restr.net', 8090);
 //			connect.connect('192.168.1.108', 8090);
-//			connect.connect('127.0.0.1', 8081);
+			connect.connect('127.0.0.1', 8090);
 //			connect.connect("192.168.10.51", 8080);
 		}
 		

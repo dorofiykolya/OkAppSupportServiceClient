@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%"
+		 height="50"
+		 creationComplete="onComplete(event)"
+		 currentState="ticket"
+		 click="onClick(event)"
+		 rollOver="onRollOver(event)"
+		 rollOut="onRollOut(event)"
+		 tabChildren="false">
+	<s:states>
+		<s:State name="ticket" />
+		<s:State name="ticketSelected"  />
+		<s:State name="message" />
+		<s:State name="messageSelected" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			import core.GlobalManager;
+			import messages.Word;
+			
+			import flash.events.ContextMenuEvent;
+			import flash.filters.*;
+			import flash.ui.ContextMenu;
+			import flash.ui.ContextMenuItem;
+			
+			import messages.Message;
+			
+			import mx.events.FlexEvent;
+			
+			import net.Connection;
+			
+			import spark.components.Image;
+			
+			import utilities.Debug;
+			
+			private static const clearColorTransform:ColorTransform = new ColorTransform();
+			private static const yellowColorTransform:ColorTransform = new ColorTransform(0xFF / 255, 0xCC / 255, .5);
+			private static const whiteColorTransform:ColorTransform = new ColorTransform( 1, 1, 1, 1, 255, 255, 255, 0);
+			private static const filter:Array = [new GlowFilter(0x256EB8, 1, 5, 5, 2, 3, true), new DropShadowFilter(3, 90, 0, 1, 3, 3, 0.16, 3, true)];
+			private var _message:Message;
+			private var _word:Word;
+			private var _selected:Boolean;
+			private var _group:ModerMessagesGroup;
+			private var isInit:Boolean;
+			private var previousState:String;
+			private var _id:int = -1;
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				
+				var menu:ContextMenu = new ContextMenu();
+				menu.hideBuiltInItems();
+				var cm:ContextMenuItem = new ContextMenuItem("Посмотреть переписку"); 
+				cm.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, onWatchTicket);
+				menu.customItems.push(cm);
+				
+				contextMenu = menu;
+				
+				mouseChildren = true;
+				validate();
+			}
+			
+			public function set group(g:ModerMessagesGroup):void
+			{
+				_group = g;
+				if (_group)
+				{
+					_group.Add(this);
+				}
+			}
+			
+			public function get group():ModerMessagesGroup
+			{
+				return _group;
+			}
+			
+			public function set selected(v:Boolean):void
+			{
+				if (_selected == v)
+					return;
+				
+				_selected = v;
+				if (_group == null)
+					return;
+				if (v)
+				{
+					_group.Select(this);
+				}
+				else
+				{
+					_group.Unselect(this);
+				}
+			}
+			
+			public function get selected():Boolean
+			{
+				return _selected;
+			}
+			
+			public function set message(m:Message):void
+			{
+				_message = m;
+				validate();
+			}
+			
+			public function get message():Message
+			{
+				return _message;
+			}
+			
+			public function set word(w:Word):void
+			{
+				_word = w;
+				validate();
+			}
+			
+			public function get word():Word
+			{
+				return _word;
+			}
+			
+			public function get Id():int
+			{
+				return _id;
+			}
+			
+			public function select():void
+			{
+				_selected = true;
+				previousState = currentState;
+				currentState = (previousState == 'ticket') ? 'ticketSelected' : 'messageSelected';
+				filters = filter;
+				
+				clockImg.transform.colorTransform = whiteColorTransform;
+				if(currentState == 'ticketSelected') typeImg.transform.colorTransform = whiteColorTransform;
+				
+				onRollOut(null);
+				
+				if (currentState == 'ticketSelected')
+				{
+					Controller.SetValue("moderMessages", _message);
+					Controller.Invoke("moderMessages", _message);
+				}
+			}
+			
+			public function unselect():void
+			{
+				_selected = false;
+				currentState = (previousState == 'ticketSelected') ? 'ticket' : 'message';
+				clockImg.transform.colorTransform = clearColorTransform;
+				if(currentState == 'ticketSelected') typeImg.transform.colorTransform = clearColorTransform;
+				filters = [];
+			}
+			
+			protected function onClick(e:MouseEvent):void
+			{
+				if (currentState == 'message')
+				{
+					return;
+				}
+				Connection.send({getModeratorMessages: {id: _message.id}});
+				selected = true;
+			}
+			
+			private function validate():void
+			{
+				if (isInit == false)
+					return;
+				
+				switch(currentState) {
+					case 'ticket':
+					case 'ticketSelected':
+						if (_message == null)
+							return;
+						validateTicket();
+						break;
+					case 'message':
+					case 'messageSelected':
+						validateMessage();
+						break;
+				}
+			}
+			
+			private function validateTicket():void {
+				if (_message == null)
+					return;
+				_id = _message.id;
+				ticketId.text = 'Тикет ' + _id;
+				type.text = Message.getType(_message.type);
+				status.text = Message.getState(_message.state);
+				title.text = _message.title;
+				if(_message.isDonator)
+				{
+					transform.colorTransform = yellowColorTransform;
+				}
+				else
+				{
+					transform.colorTransform = clearColorTransform;
+				}
+				var d:Date = new Date(0, 0, 0, 0, 0, 0, 0);
+				d.time = _message.lastUpdate * 1000;
+				time.text = d.date + "/" + (d.month + 1) + "/" + d.fullYear + "-" + d.hours + ":" + minutes(d.minutes);
+			}
+			
+			private function validateMessage():void {
+				if (_word == null)
+					return;
+				_id = _word.id;
+				ticketId.text = _word.from;
+				title.text = _word.message;
+				
+				var d:Date = new Date(0, 0, 0, 0, 0, 0, 0);
+				d.time = _word.time * 1000;
+				time.text = d.date + "/" + (d.month + 1) + "/" + d.fullYear + "-" + d.hours + ":" + minutes(d.minutes);
+			}
+			
+			private function minutes(value:int):String {
+				if (value < 10) {
+					return "0" + value;
+				}
+				return value.toString();
+			}
+			
+			protected function onRollOver(event:MouseEvent = null):void
+			{
+				if (_selected)
+					return;
+				overRect.visible = true;
+			}
+			
+			protected function onRollOut(event:MouseEvent = null):void
+			{
+				overRect.visible = false;
+			}
+			
+			protected function onWatchTicket(event:ContextMenuEvent):void
+			{
+				if(_message == null) return;
+				Connection.send({getModeratorMessages:{id:_message.id}});
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<s:Rect left="0"
+			right="0"
+			height="40"
+			includeIn="ticket,message">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" />
+		</s:fill>
+	</s:Rect>
+	<s:Rect left="0"
+			right="0"
+			height="50"
+			includeIn="ticketSelected,messageSelected">
+		<s:fill>
+			<s:LinearGradient rotation="-90">
+				<s:GradientEntry color="#3D81F3" />
+				<s:GradientEntry color="#4AA1FE" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect id="overRect"
+			left="0"
+			right="0"
+			height="50"
+			includeIn="ticket,message"
+			visible="false"
+			alpha="0.2">
+		<s:fill>
+			<s:LinearGradient rotation="-90">
+				<s:GradientEntry color="#3D81F3" />
+				<s:GradientEntry color="#4AA1FE" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Label id="ticketId" x="12" y="9" fontFamily="Tahoma" fontSize="14"
+			 mouseChildren="false" mouseEnabled="true" text="Тикет №"
+			 color.ticket="#666666" fontWeight.ticket="normal"
+			 color.ticketSelected="#FFFFFF" />
+	<s:Label id="title" x="120" y="9" click="onClick(event)" fontFamily="Tahoma" fontSize="14"
+			 mouseChildren="false" mouseEnabled="true" text="Заголовок"
+			 color.ticket="#666666"
+			 fontWeight.ticket="normal"
+			 color.ticketSelected="#FFFFFF" />
+	<s:Image id="clockImg" left="11"
+			 bottom="7"
+			 width="10"
+			 height="10"
+			 smooth="true"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 smoothingQuality="high"
+			 source="@Embed('assets/clock_pixel_mini.png')" />
+	<s:Label id="time"
+			 bottom="6"
+			 fontSize="10"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 text="11.11.11-20.10.2012"
+			 left="26"
+			 color.ticket="#777777"
+			 color.ticketSelected="#FFFFFF" />
+	<s:Image id="typeImg" includeIn="ticket,ticketSelected" left="120"
+			 bottom="6"
+			 width="10"
+			 height="10"
+			 smooth="true"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 smoothingQuality="high"
+			 source="@Embed('assets/type.png')" />
+	<s:Label id="type" includeIn="ticket,ticketSelected" x="136" bottom="6" fontSize="10" mouseChildren="false" mouseEnabled="false"
+			 text="" color.ticket="#474747" fontWeight="bold" color.ticketSelected="#FFFFFF" />
+	<mx:HRule y="49" left="0" right="0" height="1" alpha=".5" />
+	<s:Label id="status" includeIn="ticket,ticketSelected" right="10" bottom="6" fontSize="10" mouseChildren="false" mouseEnabled="false"
+			 text="" color.ticket="#474747" fontWeight="bold" color.ticketSelected="#FFFFFF" />
+</s:Group>

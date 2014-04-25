@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%"
+		 height="40"
+		 creationComplete="onComplete(event)"
+		 currentState="normal"
+		 click="onClick(event)"
+		 rollOver="onRollOver(event)"
+		 rollOut="onRollOut(event)"
+		 tabChildren="false">
+	<s:states>
+		<s:State name="normal" />
+		<s:State name="selected" />
+	</s:states>
+	<fx:Script>
+		<![CDATA[
+			
+			import flash.display.BlendMode;
+			import flash.filters.*;
+			import flash.ui.ContextMenu;
+			
+			import messages.Moder;
+			
+			import mx.events.FlexEvent;
+			
+			import net.Connection;
+			
+			private static const clearColorTransform:ColorTransform = new ColorTransform();
+			private static const yellowColorTransform:ColorTransform = new ColorTransform(0xFF / 255, 0xCC / 255, .5);
+			private static const whiteColorTransform:ColorTransform = new ColorTransform( 1, 1, 1, 1, 255, 255, 255, 0);
+			private static const filter:Array = [new GlowFilter(0x256EB8, 1, 5, 5, 2, 3, true), new DropShadowFilter(3, 90, 0, 1, 3, 3, 0.16, 3, true)];
+			private var _moder:Moder;
+			private var _selected:Boolean;
+			private var _group:ModerGroup;
+			private var isInit:Boolean;
+			
+			protected function onComplete(event:FlexEvent):void
+			{
+				isInit = true;
+				
+				var menu:ContextMenu = new ContextMenu();
+				menu.hideBuiltInItems();
+				contextMenu = menu;
+				
+				mouseChildren = true;
+				validate();
+			}
+			
+			public function set group(g:ModerGroup):void
+			{
+				_group = g;
+				if (_group)
+				{
+					_group.Add(this);
+				}
+			}
+			
+			public function get group():ModerGroup
+			{
+				return _group;
+			}
+			
+			public function set selected(v:Boolean):void
+			{
+				if (_selected == v)
+					return;
+				
+				_selected = v;
+				if (_group == null)
+					return;
+				if (v)
+				{
+					_group.Select(this);
+				}
+				else
+				{
+					_group.Unselect(this);
+				}
+			}
+			
+			public function get selected():Boolean
+			{
+				return _selected;
+			}
+			
+			public function set moder(m:Moder):void
+			{
+				_moder = m;
+				validate();
+			}
+			
+			public function get moder():Moder
+			{
+				return _moder;
+			}
+			
+			public function select():void
+			{
+				_selected = true;
+				currentState = 'selected';
+				filters = filter;
+				
+				manImg.transform.colorTransform = whiteColorTransform;
+				typeImg.transform.colorTransform = whiteColorTransform;
+					
+				onRollOut(null);
+				Controller.SetValue("moder", _moder);
+				Controller.Invoke("moder", _moder);
+			}
+			
+			public function unselect():void
+			{
+				_selected = false;
+				currentState = 'normal';
+				manImg.transform.colorTransform = clearColorTransform;
+				typeImg.transform.colorTransform = clearColorTransform;
+				
+				filters = [];
+			}
+			
+			protected function onClick(event:MouseEvent):void
+			{
+				var now:Date = new Date();
+				var unix:uint = now.getTime() / 1000 - now.getTimezoneOffset() * 60;
+				selected = true;
+			}
+			
+			private function validate():void
+			{
+				if (isInit == false)
+					return;
+				title.text = _moder.name + ' (' + _moder.login + ')';
+				average.text = "id: " + _moder.id.toString();
+				
+				var tmpArr:Array = _moder.averageScore.split(".");
+				if ( tmpArr.length > 1 )
+				{
+					if ( tmpArr[1] == "0" )
+					{
+						type.text = "средняя оценка: " + tmpArr[0];
+						return;
+					}
+				}
+				type.text = "средняя оценка: " + _moder.averageScore;
+			}
+			
+			protected function onRollOver(event:MouseEvent = null):void
+			{
+				if (_selected)
+					return;
+				overRect.visible = true;
+			}
+			
+			protected function onRollOut(event:MouseEvent = null):void
+			{
+				overRect.visible = false;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
+	</fx:Declarations>
+	<s:Rect left="0"
+			right="0"
+			height="40"
+			includeIn="normal">
+		<s:fill>
+			<s:SolidColor color="#FFFFFF" />
+		</s:fill>
+	</s:Rect>
+	<s:Rect left="0"
+			right="0"
+			height="40"
+			includeIn="selected">
+		<s:fill>
+			<s:LinearGradient rotation="-90">
+				<s:GradientEntry color="#3D81F3" />
+				<s:GradientEntry color="#4AA1FE" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Rect id="overRect"
+			left="0"
+			right="0"
+			height="40"
+			includeIn="normal"
+			visible="false"
+			alpha="0.2">
+		<s:fill>
+			<s:LinearGradient rotation="-90">
+				<s:GradientEntry color="#3D81F3" />
+				<s:GradientEntry color="#4AA1FE" />
+			</s:LinearGradient>
+		</s:fill>
+	</s:Rect>
+	<s:Image id="manImg" left="11"
+			 top="4"
+			 width="14"
+			 height="15"
+			 smooth="true"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 smoothingQuality="high"
+			 source="@Embed('assets/man.png')" />
+	<s:Label id="title" x="30" y="5" click="onClick(event)" fontFamily="Tahoma" fontSize="14"
+			 mouseChildren="false" mouseEnabled="true" text="Имя"
+			 color.normal="0"
+			 fontWeight.normal="normal"
+			 color.selected="#FFFFFF" />
+	<s:Label id="type" x="26" bottom="4" fontSize="10" mouseChildren="false" mouseEnabled="false"
+			 text="идентификатор"
+			 bottom.normal="4" color.normal="#474747" fontWeight="bold"
+			 color.selected="#FFFFFF"/>
+	<s:Label id="average"
+			 bottom="4"
+			 fontSize="10"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 text="11.11.11-20.10.2012"
+			 right="4"
+			 color.normal="#777777"
+			 color.selected="#FFFFFF" />
+	<s:Image id="typeImg" left="11"
+			 bottom="4"
+			 width="10"
+			 height="10"
+			 smooth="true"
+			 mouseChildren="false"
+			 mouseEnabled="false"
+			 smoothingQuality="high"
+			 source="@Embed('assets/type.png')" />
+	<mx:HRule y="39" left="0" right="0" height="1" alpha=".5" />
+</s:Group>
