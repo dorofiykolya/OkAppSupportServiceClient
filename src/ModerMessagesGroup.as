@@ -39,7 +39,6 @@ package
 		public function Select(t:ModerMessagePlaceholder):void{
 			if(current == t) return;
 			if (current) {
-				trace(current);
 				current.unselect();
 			}
 			current = t;

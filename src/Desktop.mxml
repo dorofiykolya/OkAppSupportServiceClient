@@ -17,9 +17,7 @@
 			import events.StateChange;
 			
             private function handleChangeGroup(e:StateChange):void
-			{ 
-                trace('handleChangeGroup');
-				trace(e.Group);
+			{
 				this.currentState = e.Group;
             } 
         ]]> 

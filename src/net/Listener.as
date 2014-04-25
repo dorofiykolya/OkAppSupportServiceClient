@@ -139,7 +139,6 @@ package net
 		
 		private function onMessages(data:Object):void 
 		{
-			trace('Listener -> onMessages');
 			var screen:Vector.<int> = Connection.parse(data.screenShots, Class(Vector.<int>)) as Vector.<int>;
 			var word:Vector.<Word> = Connection.parse(data.messages, Class(Vector.<Word>)) as Vector.<Word>;
 			Controller.SetValue("messages", word);
@@ -151,8 +150,6 @@ package net
 		
 		private function onGetModerators(data:Object = null):void 
 		{
-			trace('Listener -> onGetModerators');
-			
 			Debug.Trace(data.moderators, Debug.UNPACK);
 			
 			var moders:Vector.<Moder> = Connection.parse(data.moderators, Class(Vector.<Moder>)) as Vector.<Moder>;
@@ -167,13 +164,12 @@ package net
 		
 		private function onResponseTickets(data:Object = null):void 
 		{
-			trace('Listener -> onGetModerators');
 			Debug.Trace(data.messages, Debug.UNPACK);
 			
-			/*var mes:Vector.<Message> = Connection.parse(data.messages, Class(Vector.<Message>)) as Vector.<Message>;
-			ModerTicketsList.AddList(mes);*/
+			var mes:Vector.<Message> = Connection.parse(data.messages, Class(Vector.<Message>)) as Vector.<Message>;
+			ModerTicketsList.AddList(mes);
 			
-			var mes:Vector.<Message> = new Vector.<Message>();
+			/*var mes:Vector.<Message> = new Vector.<Message>();
 			
 			var t1:Message = new Message();
 			t1.id = 111;
@@ -221,7 +217,7 @@ package net
 			mes.push(t4);
 			mes.push(t5);
 			
-			ModerTicketsList.AddList(mes);
+			ModerTicketsList.AddList(mes);*/
 		}
 		
 		private function onModeratorMessages(data:Object = null):void 
@@ -229,10 +225,10 @@ package net
 			trace('Listener -> onModeratorMessages');
 			Debug.Trace(data.messages, Debug.UNPACK);
 			
-			/*var mes:Vector.<Word> = Connection.parse(data.messages, Class(Vector.<Word>)) as Vector.<Word>;
-			ModerMessagesList.AddList(mes);*/
+			var mes:Vector.<Word> = Connection.parse(data.messages, Class(Vector.<Word>)) as Vector.<Word>;
+			ModerMessagesList.AddList(mes);
 			
-			var mes:Vector.<Word> = new Vector.<Word>();
+			/*var mes:Vector.<Word> = new Vector.<Word>();
 
 			var m1:Word = new Word();
 			m1.id = 112;
@@ -275,18 +271,16 @@ package net
 			mes.push(m4);
 			mes.push(m5);
 			
-			ModerMessagesList.AddList(mes);
+			ModerMessagesList.AddList(mes);*/
 		}
 		
 		private function onMessage(m:Message):void 
 		{
-			trace('Listener -> onMessage');
 			MessageList.Update(m);
 		}
 		
 		private function onMessageList(data:Object = null):void
 		{
-			trace('Listener -> onMessageList');
 			Preloader.show(Preloader.INITIALIZE);
 			Preloader.hide(Preloader.AUTHORIZATION);
 			

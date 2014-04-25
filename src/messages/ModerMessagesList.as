@@ -21,13 +21,10 @@ package messages
 		
 		public static function AddList(list:Vector.<Word> = null):void
 		{
-			trace('ModerMessagesList -> AddList');
 			if (list == null) {
-				trace('ModerMessagesList -> AddList: list == null');
 				return;
 			}
 			if (list.length == 0) {
-				trace('ModerMessagesList -> AddList: list.length == 0');
 				return;
 			}
 			for each (var w:Word in list) 
@@ -40,7 +37,6 @@ package messages
 		
 		public static function Add(w:Word, dispatch:Boolean = false):void
 		{
-			trace('ModerMessagesList -> Add ' + w.id);
 			if (_dictionary[w.id]) {
 				Update(w);
 				return;
@@ -57,11 +53,9 @@ package messages
 		public static function Update(w:Word = null):void
 		{
 			if (w == null) {
-				//trace('ModerMessagesList -> Update ');
 				_event.dispatchEvent(new ModerMessagesEvent(ModerMessagesEvent.MODER_MESSAGES_UPDATE));
 				return
 			}
-			//trace('ModerMessagesList -> Update ' + m.id);
 			var mes:Word = _dictionary[w.id];
 			if (mes == null)
 			{
@@ -85,7 +79,6 @@ package messages
 		
 		public static function Remove(w:Word):void
 		{
-			trace('ModerMessagesList -> Remove ' + w.id);
 			delete _dictionary[w.id];
 			var i:int = _list.indexOf(w);
 			if (i != -1)
