@@ -9,27 +9,14 @@ package access
 	public class AccessGame
 	{
 		public var gameId:int;
-		
 		public var socialId:Vector.<AccessSocial> = new Vector.<AccessSocial>();
-		
 		public var hide:Boolean;
+		public var count:int;
 		
 		public function AccessGame(file:Access)
 		{
 			gameId = file.gameId;
-			set(file);
-		}
-		
-		public function get collection():Object
-		{
-			var x:XMLListCollection = new XMLListCollection();
-			return x;
-//			var a:Array = [];
-//			for each (var s:Object in socialId) 
-//			{
-//				a.push(s);
-//			}
-			//return new ArrayCollection(a);
+			setAccess(file);
 		}
 		
 		public function get label():String
@@ -37,7 +24,7 @@ package access
 			return Game.game(gameId);
 		}
 		
-		public function set(selected:Access):void
+		public function setAccess(selected:Access):void
 		{
 			var i:int;
 			var current:AccessSocial;
@@ -47,15 +34,16 @@ package access
 				current = socialId[i];
 				if(current.socialId == selected.socialId)
 				{
-					current.set(selected);
+					current.setAccess(selected);
 					find = true;
 					break;
 				}
 			}
 			if(find == false)
 			{
-				socialId.push(new AccessSocial(selected));
+				socialId[socialId.length] = new AccessSocial(selected);
 			}
+			count += selected.count;
 		}
 	}
 }

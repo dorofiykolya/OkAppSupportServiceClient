@@ -7,11 +7,12 @@ package access
 		public var language:Vector.<AccessLanguage> = new Vector.<AccessLanguage>();
 		public var socialId:int;
 		public var hide:Boolean;
+		public var count:int;
 		
 		public function AccessSocial(file:Access)
 		{
 			socialId = file.socialId;
-			set(file);
+			setAccess(file);
 		}
 		
 		public function get label():String
@@ -19,7 +20,7 @@ package access
 			return Social.getNameById(socialId);
 		}
 		
-		public function set(selected:Access):void
+		public function setAccess(selected:Access):void
 		{
 			var i:int;
 			var current:AccessLanguage;
@@ -29,15 +30,16 @@ package access
 				current = language[i];
 				if(current.language == selected.language)
 				{
-					current.set(selected);
+					current.setAccess(selected);
 					find = true;
 					break;
 				}
 			}
 			if(find == false)
 			{
-				language.push(new AccessLanguage(selected));
+				language[language.length] = new AccessLanguage(selected);
 			}
+			count += selected.count;
 		}
 	}
 }

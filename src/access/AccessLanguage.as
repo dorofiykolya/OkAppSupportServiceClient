@@ -5,13 +5,13 @@ package access
 	public class AccessLanguage
 	{
 		public var language:String;
-		
 		public var hide:Boolean;
+		public var count:int;
 		
 		public function AccessLanguage(file:Access)
 		{
 			language = file.language;
-			set(file);
+			setAccess(file);
 		}
 		
 		public function get label():String
@@ -19,10 +19,11 @@ package access
 			return language;
 		}
 		
-		public function set(selected:Access):void
+		public function setAccess(selected:Access):void
 		{
 			language = selected.language;
 			hide = selected.hide;
+			count += selected.count;
 		}
 	}
 }

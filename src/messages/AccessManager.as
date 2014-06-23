@@ -1,15 +1,9 @@
 package messages
 {
-	import System.Collections.List;
-	
 	import access.AccessGame;
-	
-	import flash.globalization.CurrencyFormatter;
-	import flash.net.NetConnection;
+	import access.AccessLanguage;
+	import access.AccessSocial;
 	import flash.utils.Dictionary;
-	
-	import mx.collections.ArrayCollection;
-	
 	import net.Connection;
 
 	public class AccessManager
@@ -28,36 +22,94 @@ package messages
 			return root;
 		}
 		
-		public static function Parse(list:Vector.<Access>):void
+		private static function parse(list:Vector.<Access>):void
 		{
-			root = new XML("<root/>");
-			var len:int = list.length;
-			var i:int = 0;
-			var current:Access;
-			var find:Boolean;
-			for(i = 0; i < len; i++)
+			var game:AccessGame;
+			for each (var current:Access in list) 
 			{
-				current = list[i];
-				find = false;
-				for each (var x:XML in root.children()) 
+				game = dictionary[current.gameId];
+				if (game == null)
 				{
-					if(x.@id == current.gameId)
-					{
-						pushSocial(x, current);
-						find = true;
-					}
+					game = new AccessGame(current);
+					dictionary[current.gameId] = game;
 				}
-				if(find == false)
+				else
 				{
-					var child:XML = 
-					<game id={current.gameId} label={Game.game(current.gameId)}>
-						<social id={current.socialId} label={Social.getNameById(current.socialId)} >
-							<language id={current.language} label={current.language} hide={current.hide} />
-						</social>
-					</game>;
-					root.appendChild(child);
+					game.setAccess(current);
 				}
 			}
+		}
+		
+		private static function createGame():void
+		{
+			root = <root/>;
+			
+			for each (var current:AccessGame in dictionary) 
+			{
+				var label:String = current.label + "\t\t\t\t(" + current.count + ")";
+				var child:XML = <game id={current.gameId} label={label} />
+				root.appendChild(child);
+				
+				createSocial(current, child)
+			}
+		}
+		
+		private static function createSocial(item:AccessGame, root:XML):void
+		{
+			for each (var current:AccessSocial in item.socialId) 
+			{
+				var label:String = current.label + "\t\t\t\t(" + current.count + ")";
+				var child:XML = <social id={current.socialId} label={label} />
+				root.appendChild(child);
+				
+				createLanguage(current, child);
+			}
+		}
+		
+		private static function createLanguage(item:AccessSocial, root:XML):void
+		{
+			for each (var current:AccessLanguage in item.language) 
+			{
+				var label:String = current.language + "\t\t\t\t(" + current.count + ")";
+				var child:XML = <language id={current.language} label={label} hide={current.hide} />;
+				
+				root.appendChild(child);	
+			}
+		}
+		
+		public static function Parse(list:Vector.<Access>):void
+		{
+			parse(list);
+			createGame();
+			
+			//root = new XML("<root/>");
+			//var len:int = list.length;
+			//var i:int = 0;
+			//var current:Access;
+			//var find:Boolean;
+			//for(i = 0; i < len; i++)
+			//{
+				//current = list[i];
+				//find = false;
+				//for each (var x:XML in root.children()) 
+				//{
+					//if(x.@id == current.gameId)
+					//{
+						//pushSocial(x, current);
+						//find = true;
+					//}
+				//}
+				//if(find == false)
+				//{
+					//var child:XML = 
+					//<game id={current.gameId} label={Game.game(current.gameId)}>
+						//<social id={current.socialId} label={Social.getNameById(current.socialId)} >
+							//<language id={current.language} label={current.language} hide={current.hide} />
+						//</social>
+					//</game>;
+					//root.appendChild(child);
+				//}
+			//}
 		}
 		
 		private static function pushSocial(root:XML, current:Access):void
@@ -95,7 +147,8 @@ package messages
 			}
 			if(find == false)
 			{
-				var child:XML = <language id={current.language} label={current.language} hide={current.hide} />;
+				var lang:String = current.language + "\t\t\t(" + current.count + ")";
+				var child:XML = <language id={current.language} label={lang} hide={current.hide} />;
 				root.appendChild(child);
 			}
 		}

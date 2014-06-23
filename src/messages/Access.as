@@ -6,6 +6,7 @@ package messages
 		public var hide:Boolean;
 		public var gameId:int;
 		public var language:String;
+		public var count:int;
 		
 		public function Access()
 		{
