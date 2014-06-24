@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <project version="2">
-  <!-- Output SWF options -->
-  <output>
-    <movie outputType="Application" />
+  <!-- Output SWF options --><br/>
+   <output>
+    <movie disabled="False" />
     <movie input="" />
     <movie path="bin\NewProject.swf" />
     <movie fps="30" />
@@ -10,9 +10,8 @@
     <movie height="600" />
     <movie version="10" />
     <movie minorVersion="2" />
-    <movie platform="Flash Player" />
     <movie background="#FFFFFF" />
-  </output>
+  </output>  
   <!-- Other classes to be compiled into your SWF -->
   <classpaths>
     <class path="src" />
@@ -20,18 +19,13 @@
   <!-- Build options -->
   <build>
     <option accessible="False" />
-    <option advancedTelemetry="False" />
     <option allowSourcePathOverlap="False" />
     <option benchmark="False" />
     <option es="False" />
-    <option inline="False" />
-    <option locale="" />
     <option loadConfig="" />
     <option optimize="True" />
-    <option omitTraces="True" />
     <option showActionScriptWarnings="True" />
     <option showBindingWarnings="True" />
-    <option showInvalidCSS="True" />
     <option showDeprecationWarnings="True" />
     <option showUnusedTypeSelectorWarnings="True" />
     <option strict="True" />
@@ -39,12 +33,9 @@
     <option useResourceBundleMetadata="True" />
     <option warnings="True" />
     <option verboseStackTraces="False" />
-    <option linkReport="" />
-    <option loadExterns="" />
     <option staticLinkRSL="True" />
     <option additional="" />
-    <option compilerConstants="" />
-    <option minorVersion="" />
+    <option customSDK="" />
   </build>
   <!-- SWC Include Libraries -->
   <includeLibraries>
@@ -76,7 +67,7 @@
   </compileTargets>
   <!-- Paths to exclude from the Project Explorer tree -->
   <hiddenPaths>
-    <hidden path="obj" />
+    <!-- example: <hidden path="..." /> -->
   </hiddenPaths>
   <!-- Executed before build -->
   <preBuildCommand />
@@ -86,11 +77,5 @@
   <options>
     <option showHiddenPaths="False" />
     <option testMovie="Default" />
-    <option testMovieCommand="" />
   </options>
-  <!-- Plugin storage -->
-  <storage>
-    <entry key="at_enabled"><![CDATA[0]]></entry>
-    <entry key="at_password"><![CDATA[]]></entry>
-  </storage>
 </project>

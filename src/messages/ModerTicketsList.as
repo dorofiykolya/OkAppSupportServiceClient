@@ -110,6 +110,9 @@ package messages
 		{
 			_dictionary = new Dictionary();
 			_list.length = 0;
+			var evt:ModerMessagesEvent = new ModerMessagesEvent(ModerMessagesEvent.MODER_TICKETS_REMOVE);
+			_event.dispatchEvent(evt);
+
 		}
 		
 		public static function addListener(type:String, listener:Function):void{

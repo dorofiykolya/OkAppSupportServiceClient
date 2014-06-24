@@ -67,10 +67,12 @@
 				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_ADD, onAddMessage);
 				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_ADD_LIST, updateList);
 				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_UPDATE, onUpdate);
+				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_REMOVE, updateList);
 				
 				ModerMessagesList.addListener(ModerMessagesEvent.MODER_MESSAGES_ADD, onAddMessage);
 				ModerMessagesList.addListener(ModerMessagesEvent.MODER_MESSAGES_ADD_LIST, updateList);
 				ModerMessagesList.addListener(ModerMessagesEvent.MODER_MESSAGES_UPDATE, onUpdate);
+				
 				
 				Controller.AddHandler("moder", onModer);
 				Controller.AddHandler("moderMessages", onModerMessages);
@@ -80,7 +82,12 @@
 			{
 				moder = e;
 				currentState = moder ? "tickets" : "passive";
-				updateTicketFilters();
+				if (moder)
+				{
+					ModerTicketsList.Reset();
+					updateTicketFilters();
+				}
+				
 			}
 			
 			private function updateTicketFilters():void
@@ -103,6 +110,7 @@
 			
 			private function onModerMessages(e:Message):void
 			{
+				ModerMessagesList.Reset();
 				checkToState("messages");
 			}
 			
@@ -189,7 +197,6 @@
 			
 			private function onUpdate(e:ModerMessagesEvent = null):void
 			{
-				trace('onUpdate');
 				var current:ModerMessagePlaceholder;
 				var id:int;
 				var currentGroup:ModerMessagesGroup;
@@ -225,8 +232,6 @@
 			
 			private function addTicket(e:Message, index:int = -1):void
 			{
-				trace('AnswerStack -> addTicket');
-				
 				var p:ModerMessagePlaceholder = new ModerMessagePlaceholder();
 				p.currentState = 'ticket';
 				p.message = e;
@@ -244,8 +249,6 @@
 			
 			private function addMessage(e:Word, index:int = -1):void
 			{
-				trace('AnswerStack -> addMessage');
-				
 				var p:ModerMessagePlaceholder = new ModerMessagePlaceholder();
 				p.currentState = 'message';
 				p.word = e;

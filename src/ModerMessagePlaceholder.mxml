@@ -250,7 +250,7 @@
 	</fx:Declarations>
 	<s:Rect left="0"
 			right="0"
-			height="40"
+			height="50"
 			includeIn="ticket,message">
 		<s:fill>
 			<s:SolidColor color="#FFFFFF" />

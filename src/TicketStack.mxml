@@ -375,7 +375,6 @@
 			}
 			
 			private function addToMODER(m:ModerPlaceholder, index:int = -1):void{
-				trace('addToMODER ' + m.id);
 				if(m.group){
 					m.group.Remove(m);
 				}
