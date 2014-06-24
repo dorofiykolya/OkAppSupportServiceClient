@@ -13,6 +13,8 @@
 	<fx:Script>
 		<![CDATA[
 			import com.hillelcoren.utils.StringUtils;
+			import mx.events.ResizeEvent;
+			import utilities.Debug;
 			
 			import messages.Message;
 			import messages.Word;
@@ -29,8 +31,6 @@
 				Controller.AddHandler("messages", onMessages);
 				onMessages(Controller.GetValue("messages") as Vector.<Word>);
 				Controller.AddHandler("message", onMessage);
-				
-				//Controller.AddHandler("test", onTest);
 			}
 			
 			private function onMessage(e:Message):void{

@@ -382,11 +382,6 @@
 	</s:HGroup>
 	<s:Scroller id="answerScroller" top="44" bottom="20" width="100%" horizontalScrollPolicy="off">
 		<s:VGroup id="moderTicketsList" gap="0" width="100%" height="100%">
-			<!--<local:ModerMessagePlaceholder message="{new Message(111,'first message', 1446595100, 1446595101, 'error', 'scheduled')}" group="{ModerMessagesGroup.tickets}" />
-			<local:ModerMessagePlaceholder message="{new Message(222,'second message', 1446595110, 1446595111, 'proposal', 'answered')}" group="{ModerMessagesGroup.tickets}" />
-			<local:ModerMessagePlaceholder message="{new Message(333,'third message', 1446595120, 1446595121, 'partnership', 'scheduled')}" group="{ModerMessagesGroup.tickets}" />
-			<local:ModerMessagePlaceholder message="{new Message(444,'forth message', 1446595150, 1446595151, 'proposal', 'answered')}" group="{ModerMessagesGroup.tickets}" />
-			<local:ModerMessagePlaceholder message="{new Message(555,'fifth message', 1446595200, 1446595201, 'thanks', 'closed')}" group="{ModerMessagesGroup.tickets}" />-->
 		</s:VGroup>
 	</s:Scroller>
 	<mx:HRule y="44" left="0" right="0" height="2" />

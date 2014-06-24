@@ -3,7 +3,6 @@
 		 xmlns:s="library://ns.adobe.com/flex/spark"
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
 		 width="100%"
-		 height="50"
 		 creationComplete="onComplete(event)"
 		 currentState="ticket"
 		 click="onClick(event)"
@@ -20,6 +19,7 @@
 		<![CDATA[
 			import core.GlobalManager;
 			import messages.Word;
+			import mx.events.ResizeEvent;
 			
 			import flash.events.ContextMenuEvent;
 			import flash.filters.*;
@@ -51,15 +51,6 @@
 			protected function onComplete(event:FlexEvent):void
 			{
 				isInit = true;
-				
-				var menu:ContextMenu = new ContextMenu();
-				menu.hideBuiltInItems();
-				var cm:ContextMenuItem = new ContextMenuItem("Посмотреть переписку"); 
-				cm.addEventListener(ContextMenuEvent.MENU_ITEM_SELECT, onWatchTicket);
-				menu.customItems.push(cm);
-				
-				contextMenu = menu;
-				
 				mouseChildren = true;
 				validate();
 			}
@@ -193,6 +184,8 @@
 				type.text = Message.getType(_message.type);
 				status.text = Message.getState(_message.state);
 				title.text = _message.title;
+				rectangles.height = this.height;
+				
 				if(_message.isDonator)
 				{
 					transform.colorTransform = yellowColorTransform;
@@ -212,6 +205,7 @@
 				_id = _word.id;
 				ticketId.text = _word.from;
 				title.text = _word.message;
+				rectangles.height = this.height;
 				
 				var d:Date = new Date(0, 0, 0, 0, 0, 0, 0);
 				d.time = _word.time * 1000;
@@ -229,18 +223,18 @@
 			{
 				if (_selected)
 					return;
-				overRect.visible = true;
+				if (overRect)
+				{
+					overRect.visible = true;
+				}
 			}
 			
 			protected function onRollOut(event:MouseEvent = null):void
 			{
-				overRect.visible = false;
-			}
-			
-			protected function onWatchTicket(event:ContextMenuEvent):void
-			{
-				if(_message == null) return;
-				Connection.send({getModeratorMessages:{id:_message.id}});
+				if (overRect)
+				{
+					overRect.visible = false;
+				}
 			}
 			
 		]]>
@@ -248,78 +242,92 @@
 	<fx:Declarations>
 		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
 	</fx:Declarations>
-	<s:Rect left="0"
-			right="0"
-			height="50"
-			includeIn="ticket,message">
-		<s:fill>
-			<s:SolidColor color="#FFFFFF" />
-		</s:fill>
-	</s:Rect>
-	<s:Rect left="0"
-			right="0"
-			height="50"
-			includeIn="ticketSelected,messageSelected">
-		<s:fill>
-			<s:LinearGradient rotation="-90">
-				<s:GradientEntry color="#3D81F3" />
-				<s:GradientEntry color="#4AA1FE" />
-			</s:LinearGradient>
-		</s:fill>
-	</s:Rect>
-	<s:Rect id="overRect"
-			left="0"
-			right="0"
-			height="50"
-			includeIn="ticket,message"
-			visible="false"
-			alpha="0.2">
-		<s:fill>
-			<s:LinearGradient rotation="-90">
-				<s:GradientEntry color="#3D81F3" />
-				<s:GradientEntry color="#4AA1FE" />
-			</s:LinearGradient>
-		</s:fill>
-	</s:Rect>
-	<s:Label id="ticketId" x="12" y="9" fontFamily="Tahoma" fontSize="14"
-			 mouseChildren="false" mouseEnabled="true" text="Тикет №"
-			 color.ticket="#666666" fontWeight.ticket="normal"
-			 color.ticketSelected="#FFFFFF" />
-	<s:Label id="title" x="120" y="9" click="onClick(event)" fontFamily="Tahoma" fontSize="14"
-			 mouseChildren="false" mouseEnabled="true" text="Заголовок"
-			 color.ticket="#666666"
-			 fontWeight.ticket="normal"
-			 color.ticketSelected="#FFFFFF" />
-	<s:Image id="clockImg" left="11"
-			 bottom="7"
-			 width="10"
-			 height="10"
-			 smooth="true"
-			 mouseChildren="false"
-			 mouseEnabled="false"
-			 smoothingQuality="high"
-			 source="@Embed('assets/clock_pixel_mini.png')" />
-	<s:Label id="time"
-			 bottom="6"
-			 fontSize="10"
-			 mouseChildren="false"
-			 mouseEnabled="false"
-			 text="11.11.11-20.10.2012"
-			 left="26"
-			 color.ticket="#777777"
-			 color.ticketSelected="#FFFFFF" />
-	<s:Image id="typeImg" includeIn="ticket,ticketSelected" left="120"
-			 bottom="6"
-			 width="10"
-			 height="10"
-			 smooth="true"
-			 mouseChildren="false"
-			 mouseEnabled="false"
-			 smoothingQuality="high"
-			 source="@Embed('assets/type.png')" />
-	<s:Label id="type" includeIn="ticket,ticketSelected" x="136" bottom="6" fontSize="10" mouseChildren="false" mouseEnabled="false"
-			 text="" color.ticket="#474747" fontWeight="bold" color.ticketSelected="#FFFFFF" />
-	<mx:HRule y="49" left="0" right="0" height="1" alpha=".5" />
-	<s:Label id="status" includeIn="ticket,ticketSelected" right="10" bottom="6" fontSize="10" mouseChildren="false" mouseEnabled="false"
-			 text="" color.ticket="#474747" fontWeight="bold" color.ticketSelected="#FFFFFF" />
+	<s:Group id="rectangles" width="100%" height="50">
+		<s:Rect left="0"
+				right="0"
+				width="100%"
+				height="100%"
+				includeIn="ticket">
+			<s:fill>
+				<s:SolidColor color="#FFFFFF" />
+			</s:fill>
+		</s:Rect>
+		<s:Rect left="0"
+				right="0"
+				width="100%"
+				height="100%"
+				includeIn="ticketSelected">
+			<s:fill>
+				<s:LinearGradient rotation="-90">
+					<s:GradientEntry color="#3D81F3" />
+					<s:GradientEntry color="#4AA1FE" />
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+		<s:Rect id="overRect"
+				left="0"
+				right="0"
+				width="100%"
+				height="100%"
+				includeIn="ticket"
+				visible="false"
+				alpha="0.2">
+			<s:fill>
+				<s:LinearGradient rotation="-90">
+					<s:GradientEntry color="#3D81F3" />
+					<s:GradientEntry color="#4AA1FE" />
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+	</s:Group>
+	<s:VGroup width="100%" gap="5" x="10" y="4">
+		<s:Group id="gr1" width="100%">
+			<s:Label id="ticketId" y="5" height="20" fontFamily="Tahoma" fontSize="14"
+				 mouseChildren="false" mouseEnabled="true" text="Тикет №"
+				 color.ticket="#666666" fontWeight.ticket="normal"
+				 color.ticketSelected="#FFFFFF" />
+			<mx:Text id="title" x="114" width="100%" click="onClick(event)" fontFamily="Tahoma" fontSize="14"
+				 mouseChildren="false" mouseEnabled="true" text="Заголовок"
+				 color.ticket="#666666"
+				 fontWeight.ticket="normal"
+				 color.ticketSelected="#FFFFFF" />
+		</s:Group>
+		<s:HGroup id="gr2" width="100%">
+			<s:Group width="110">
+				<s:Image id="clockImg"
+					 width="10"
+					 height="10"
+					 smooth="true"
+					 mouseChildren="false"
+					 mouseEnabled="false"
+					 smoothingQuality="high"
+					 source="@Embed('assets/clock_pixel_mini.png')" />
+				<s:Label id="time"
+					 top="2"
+					 left="14"
+					 fontSize="10"
+					 mouseChildren="false"
+					 mouseEnabled="false"
+					 text="11.11.11-20.10.2012"
+					 color.ticket="#777777"
+					 color.ticketSelected="#FFFFFF" />
+			</s:Group>
+			<s:Image id="typeImg" includeIn="ticket,ticketSelected" left="110"
+				 bottom="6"
+				 width="10"
+				 height="10"
+				 smooth="true"
+				 mouseChildren="false"
+				 mouseEnabled="false"
+				 smoothingQuality="high"
+				 source="@Embed('assets/type.png')" />
+			<s:Label id="type" includeIn="ticket,ticketSelected" x="126" width="200" bottom="6" fontSize="10" mouseChildren="false" mouseEnabled="false"
+				 text="" color.ticket="#474747" fontWeight="bold" color.ticketSelected="#FFFFFF" />
+			<s:Group width="100%">
+				<s:Label id="status" right="10" includeIn="ticket,ticketSelected" fontSize="10" mouseChildren="false" mouseEnabled="false"
+				 text="" color.ticket="#474747" fontWeight="bold" color.ticketSelected="#FFFFFF" />
+			</s:Group>
+		</s:HGroup>
+		<mx:HRule width="100%" left="0" right="0" height="1" alpha=".5" />
+	</s:VGroup>
 </s:Group>
