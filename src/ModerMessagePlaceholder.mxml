@@ -40,7 +40,6 @@
 			private static const yellowColorTransform:ColorTransform = new ColorTransform(0xFF / 255, 0xCC / 255, .5);
 			private static const whiteColorTransform:ColorTransform = new ColorTransform( 1, 1, 1, 1, 255, 255, 255, 0);
 			private static const filter:Array = [new GlowFilter(0x256EB8, 1, 5, 5, 2, 3, true), new DropShadowFilter(3, 90, 0, 1, 3, 3, 0.16, 3, true)];
-			private var _message:Message;
 			private var _word:Word;
 			private var _selected:Boolean;
 			private var _group:ModerMessagesGroup;
@@ -92,17 +91,6 @@
 				return _selected;
 			}
 			
-			public function set message(m:Message):void
-			{
-				_message = m;
-				validate();
-			}
-			
-			public function get message():Message
-			{
-				return _message;
-			}
-			
 			public function set word(w:Word):void
 			{
 				_word = w;
@@ -127,14 +115,14 @@
 				filters = filter;
 				
 				clockImg.transform.colorTransform = whiteColorTransform;
-				if(currentState == 'ticketSelected') typeImg.transform.colorTransform = whiteColorTransform;
+				// if(currentState == 'ticketSelected') typeImg.transform.colorTransform = whiteColorTransform;
 				
 				onRollOut(null);
 				
 				if (currentState == 'ticketSelected')
 				{
-					Controller.SetValue("moderMessages", _message);
-					Controller.Invoke("moderMessages", _message);
+					Controller.SetValue("moderMessages", _word);
+					Controller.Invoke("moderMessages", _word);
 				}
 			}
 			
@@ -143,7 +131,7 @@
 				_selected = false;
 				currentState = (previousState == 'ticketSelected') ? 'ticket' : 'message';
 				clockImg.transform.colorTransform = clearColorTransform;
-				if(currentState == 'ticketSelected') typeImg.transform.colorTransform = clearColorTransform;
+				// if(currentState == 'ticketSelected') typeImg.transform.colorTransform = clearColorTransform;
 				filters = [];
 			}
 			
@@ -153,7 +141,7 @@
 				{
 					return;
 				}
-				Connection.send({getModeratorMessages: {id: _message.id}});
+				Connection.send({getModeratorMessages: {id: _word.ticketId}});
 				selected = true;
 			}
 			
@@ -165,8 +153,6 @@
 				switch(currentState) {
 					case 'ticket':
 					case 'ticketSelected':
-						if (_message == null)
-							return;
 						validateTicket();
 						break;
 					case 'message':
@@ -177,25 +163,23 @@
 			}
 			
 			private function validateTicket():void {
-				if (_message == null)
+				if (_word == null)
 					return;
-				_id = _message.id;
-				ticketId.text = 'Тикет ' + _id;
-				type.text = Message.getType(_message.type);
-				status.text = Message.getState(_message.state);
-				title.text = _message.title;
-				rectangles.height = this.height;
+				ticketId.text = 'Тикет ' + _word.ticketId;
+				/*type.text = Message.getType(_word.type);
+				status.text = Message.getState(_word.state);*/
+				title.text = _word.message;
 				
-				if(_message.isDonator)
+				/*if(_word.isDonator)
 				{
 					transform.colorTransform = yellowColorTransform;
 				}
 				else
 				{
 					transform.colorTransform = clearColorTransform;
-				}
+				}*/
 				var d:Date = new Date(0, 0, 0, 0, 0, 0, 0);
-				d.time = _message.lastUpdate * 1000;
+				d.time = _word.time * 1000;
 				time.text = d.date + "/" + (d.month + 1) + "/" + d.fullYear + "-" + d.hours + ":" + minutes(d.minutes);
 			}
 			
@@ -205,7 +189,6 @@
 				_id = _word.id;
 				ticketId.text = _word.from;
 				title.text = _word.message;
-				rectangles.height = this.height;
 				
 				var d:Date = new Date(0, 0, 0, 0, 0, 0, 0);
 				d.time = _word.time * 1000;
@@ -242,7 +225,7 @@
 	<fx:Declarations>
 		<!-- Разместить невизуальные элементы (например, службы или объекты значений) -->
 	</fx:Declarations>
-	<s:Group id="rectangles" width="100%" height="50">
+	<s:Group id="rectangles" width="100%" height="100%">
 		<s:Rect left="0"
 				right="0"
 				width="100%"
@@ -312,7 +295,7 @@
 					 color.ticket="#777777"
 					 color.ticketSelected="#FFFFFF" />
 			</s:Group>
-			<s:Image id="typeImg" includeIn="ticket,ticketSelected" left="110"
+			<!--<s:Image id="typeImg" includeIn="ticket,ticketSelected" left="110"
 				 bottom="6"
 				 width="10"
 				 height="10"
@@ -326,7 +309,7 @@
 			<s:Group width="100%">
 				<s:Label id="status" right="10" includeIn="ticket,ticketSelected" fontSize="10" mouseChildren="false" mouseEnabled="false"
 				 text="" color.ticket="#474747" fontWeight="bold" color.ticketSelected="#FFFFFF" />
-			</s:Group>
+			</s:Group>-->
 		</s:HGroup>
 		<mx:HRule width="100%" left="0" right="0" height="1" alpha=".5" />
 	</s:VGroup>

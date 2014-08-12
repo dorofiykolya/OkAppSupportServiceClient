@@ -1,7 +1,6 @@
 package events 
 {
 	import flash.events.Event;
-	import messages.Message;
 	import messages.Word;
 	
 	/**
@@ -20,7 +19,6 @@ package events
 		public static const MODER_TICKETS_ADD_LIST:String = 'moderTicketsAddList';
 		public static const MODER_TICKETS_REMOVE:String = 'moderTicketsRemove';
 		
-		public var message:Message;
 		public var word:Word;
 		
 		public function ModerMessagesEvent(type:String, bubbles:Boolean=false, cancelable:Boolean=false) 

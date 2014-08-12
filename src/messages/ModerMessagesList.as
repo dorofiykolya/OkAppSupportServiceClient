@@ -13,14 +13,20 @@ package messages
 	[Event(name = "moderMessagesAddList", type = "events.ModerMessagesEvent")]
 	[Event(name = "moderMessagesRemove", type = "events.ModerMessagesEvent")]
 	
+	[Event(name = "moderTicketsUpdate", type = "events.ModerMessagesEvent")]
+	[Event(name = "moderTicketsAdd", type = "events.ModerMessagesEvent")]
+	[Event(name = "moderTicketsAddList", type = "events.ModerMessagesEvent")]
+	[Event(name = "moderTicketsRemove", type = "events.ModerMessagesEvent")]
+	
 	public class ModerMessagesList 
 	{
 		private static var _event:EventDispatcher = new EventDispatcher();
 		private static var _dictionary:Dictionary = new Dictionary(true);
 		private static var _list:Vector.<Word> = new Vector.<Word>();
 		
-		public static function AddList(list:Vector.<Word> = null):void
+		public static function AddList(list:Vector.<Word> = null, tickets:Boolean = false):void
 		{
+			Reset();
 			if (list == null) {
 				return;
 			}
@@ -29,40 +35,42 @@ package messages
 			}
 			for each (var w:Word in list) 
 			{
-				Add(w);
+				Add(w, false, tickets);
 			}
-			var evt:ModerMessagesEvent = new ModerMessagesEvent(ModerMessagesEvent.MODER_MESSAGES_ADD_LIST);
+			var evt:ModerMessagesEvent = new ModerMessagesEvent(tickets ? ModerMessagesEvent.MODER_TICKETS_ADD_LIST : ModerMessagesEvent.MODER_MESSAGES_ADD_LIST);
 			_event.dispatchEvent(evt);
 		}
 		
-		public static function Add(w:Word, dispatch:Boolean = false):void
+		public static function Add(w:Word, dispatch:Boolean = false, ticket:Boolean = false):void
 		{
-			if (_dictionary[w.id]) {
-				Update(w);
+			if (_dictionary[w.id])
+			{
+				Update(w, ticket);
 				return;
 			}
 			_dictionary[w.id] = w;
 			_list.push(w);
-			if (dispatch) {
-				var evt:ModerMessagesEvent = new ModerMessagesEvent(ModerMessagesEvent.MODER_MESSAGES_ADD);
-				evt.word = w;
-				_event.dispatchEvent(evt);
+			
+			if (dispatch == false)
+			{
+				return;
 			}
+			var evt:ModerMessagesEvent = new ModerMessagesEvent(ticket ? ModerMessagesEvent.MODER_TICKETS_ADD : ModerMessagesEvent.MODER_MESSAGES_ADD);
+			evt.word = w;
+			_event.dispatchEvent(evt);
 		}
 		
-		public static function Update(w:Word = null):void
+		public static function Update(w:Word = null, ticket:Boolean = false):void
 		{
-			if (w == null) {
-				_event.dispatchEvent(new ModerMessagesEvent(ModerMessagesEvent.MODER_MESSAGES_UPDATE));
+			if (w == null)
+			{
+				_event.dispatchEvent(new ModerMessagesEvent(ticket ? ModerMessagesEvent.MODER_TICKETS_UPDATE : ModerMessagesEvent.MODER_MESSAGES_UPDATE));
 				return
 			}
 			var mes:Word = _dictionary[w.id];
 			if (mes == null)
 			{
-				Add(w);
-				var evt:ModerMessagesEvent = new ModerMessagesEvent(ModerMessagesEvent.MODER_MESSAGES_ADD);
-				evt.word = w;
-				_event.dispatchEvent(evt);
+				Add(w, true, ticket);
 				return;
 			}
 			var i:int = _list.indexOf(mes);
@@ -72,19 +80,19 @@ package messages
 			}
 			_dictionary[w.id] = w;
 			
-			var uevt:ModerMessagesEvent = new ModerMessagesEvent(ModerMessagesEvent.MODER_MESSAGES_UPDATE);
+			var uevt:ModerMessagesEvent = new ModerMessagesEvent(ticket ? ModerMessagesEvent.MODER_TICKETS_UPDATE : ModerMessagesEvent.MODER_MESSAGES_UPDATE);
 			uevt.word = w;
 			_event.dispatchEvent(uevt);
 		}
 		
-		public static function Remove(w:Word):void
+		public static function Remove(w:Word, ticket:Boolean = false):void
 		{
 			delete _dictionary[w.id];
 			var i:int = _list.indexOf(w);
 			if (i != -1)
 			{
 				_list.splice(i, 1);
-				var evt:ModerMessagesEvent = new ModerMessagesEvent(ModerMessagesEvent.MODER_MESSAGES_REMOVE);
+				var evt:ModerMessagesEvent = new ModerMessagesEvent(ticket ? ModerMessagesEvent.MODER_TICKETS_REMOVE : ModerMessagesEvent.MODER_MESSAGES_REMOVE);
 				evt.word = w;
 				_event.dispatchEvent(evt);
 			}

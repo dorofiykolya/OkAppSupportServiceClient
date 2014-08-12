@@ -3,6 +3,7 @@
 					  xmlns:s="library://ns.adobe.com/flex/spark"
 					  skinClass="skin.container.RoundContainerSkin"
 					  creationComplete="onComplete(event)"
+					  addedToStage="onAddedToStage(event)"
 					  xmlns:graphics="skin.graphics.*"
 					  xmlns:local="*"
 					  currentState="passive"
@@ -19,7 +20,6 @@
 			import flash.events.MouseEvent;
 			import flash.globalization.LocaleID;
 			import messages.ModerMessagesList;
-			import messages.ModerTicketsList;
 			import messages.Word;
 			import mx.controls.DateField;
 			
@@ -38,7 +38,6 @@
 			import events.MessageEvent;
 			import events.ModerEvent;
 			
-			import messages.Message;
 			import messages.MessageList;
 			import messages.Moder;
 			import messages.ModerList;
@@ -55,27 +54,36 @@
 			private var previousNumber:int = -1;
 			private var starNumber:int = STAR_NUMBER;
 			
+			private const ESTIMATE_LIKE:int = 1;
+			private const ESTIMATE_DISLIKE:int = 2;
+			private var estimate:int = ESTIMATE_DISLIKE;
+			
 			private var firstUnix:uint;
 			private var secondUnix:uint;
 			private var moder:Moder;
-			private var ticket:Message;
 			
 			private var previousState:String;
 			
 			protected function onComplete(event:FlexEvent):void
 			{
-				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_ADD, onAddMessage);
-				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_ADD_LIST, updateList);
-				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_UPDATE, onUpdate);
-				ModerTicketsList.addListener(ModerMessagesEvent.MODER_TICKETS_REMOVE, updateList);
+				ModerMessagesList.addListener(ModerMessagesEvent.MODER_TICKETS_ADD, onAddMessage);
+				ModerMessagesList.addListener(ModerMessagesEvent.MODER_TICKETS_ADD_LIST, updateList);
+				ModerMessagesList.addListener(ModerMessagesEvent.MODER_TICKETS_UPDATE, onUpdate);
+				ModerMessagesList.addListener(ModerMessagesEvent.MODER_TICKETS_REMOVE, updateList);
 				
 				ModerMessagesList.addListener(ModerMessagesEvent.MODER_MESSAGES_ADD, onAddMessage);
 				ModerMessagesList.addListener(ModerMessagesEvent.MODER_MESSAGES_ADD_LIST, updateList);
 				ModerMessagesList.addListener(ModerMessagesEvent.MODER_MESSAGES_UPDATE, onUpdate);
 				
-				
 				Controller.AddHandler("moder", onModer);
 				Controller.AddHandler("moderMessages", onModerMessages);
+			}
+			
+			protected function onAddedToStage(event:Event):void
+			{
+				estimate = ESTIMATE_DISLIKE;
+				group.selectedValue = estimate;
+				resetList();
 			}
 			
 			private function onModer(e:Moder):void
@@ -84,10 +92,10 @@
 				currentState = moder ? "tickets" : "passive";
 				if (moder)
 				{
-					ModerTicketsList.Reset();
+					ModerMessagesList.Reset();
+					moderTicketsList.removeAllElements();
 					updateTicketFilters();
 				}
-				
 			}
 			
 			private function updateTicketFilters():void
@@ -105,10 +113,12 @@
 				firstUnix = unix - 2592000;
 				secondUnix = unix;
 				isInit = true;
-				applyStars( DEFAULT_STARS );
+				estimate = ESTIMATE_DISLIKE;
+				group.selectedValue = estimate;
+				getTicketsFromServer();
 			}
 			
-			private function onModerMessages(e:Message):void
+			private function onModerMessages(e:Word):void
 			{
 				ModerMessagesList.Reset();
 				checkToState("messages");
@@ -127,14 +137,7 @@
 			
 			private function onAddMessage(e:ModerMessagesEvent = null):void
 			{
-				switch(currentState) {
-					case 'tickets':
-						addTicket(e.message);
-						break;
-					case 'messages':
-						addMessage(e.word);
-						break;
-				}
+				add(e.word, currentState == 'tickets');
 			}
 			
 			private function onAddList(e:ModerMessagesEvent = null):void
@@ -153,19 +156,15 @@
 			private function updateList(e:ModerMessagesEvent = null):void
 			{
 				moderTicketsList.removeAllElements();
-				
-				switch(currentState) {
-					case 'tickets':
-						updateTicketList();
-						break;
-					case 'messages':
-						updateMessageList();
-						break;
-				}
+				update();
 			}
 			
 			private function resetList():void
 			{
+				if (initialized == false)
+				{
+					return;
+				}
 				switch(currentState) {
 					case 'tickets':
 						ModerMessagesGroup.tickets.Reset();
@@ -177,39 +176,20 @@
 				moderTicketsList.removeAllElements();
 			}
 			
-			private function updateTicketList():void
-			{
-				var list:Vector.<Message> = ModerTicketsList.List;
-				for each (var m:Message in list) 
-				{
-					addTicket(m);
-				}
-			}
-			
-			private function updateMessageList():void
+			private function update():void
 			{
 				var list:Vector.<Word> = ModerMessagesList.List;
-				for each (var w:Word in list) 
+				for each (var m:Word in list) 
 				{
-					addMessage(w);
+					add(m, currentState == 'tickets');
 				}
 			}
 			
 			private function onUpdate(e:ModerMessagesEvent = null):void
 			{
 				var current:ModerMessagePlaceholder;
-				var id:int;
-				var currentGroup:ModerMessagesGroup;
-				if (currentState == 'tickets')
-				{
-					id = e.message.id;
-					currentGroup = ModerMessagesGroup.tickets;
-				}
-				else
-				{
-					id = e.word.id;
-					currentGroup = ModerMessagesGroup.messages;
-				}
+				var id:int = e.word.id;
+				var currentGroup:ModerMessagesGroup = (currentState == 'tickets') ? ModerMessagesGroup.tickets : ModerMessagesGroup.messages;
 				if (current == null) {
 					current = currentGroup.GetByMessageId(id);
 					if(current){
@@ -218,44 +198,20 @@
 				}
 				
 				if (current == null) return;
-				if (currentState == 'tickets')
-				{
-					current.message = e.message;
-				}
-				else
-				{
-					current.word = e.word;
-				}
+				current.word = e.word;
 				current.group = currentGroup;
 				moderTicketsList.addElement(current);
 			}
 			
-			private function addTicket(e:Message, index:int = -1):void
+			private function add(w:Word, ticket:Boolean = false, index:int = -1):void
 			{
 				var p:ModerMessagePlaceholder = new ModerMessagePlaceholder();
-				p.currentState = 'ticket';
-				p.message = e;
+				p.currentState = ticket ? 'ticket' : 'message';
+				p.word = w;
 				if(p.group){
 					p.group.Remove(p);
 				}
-				p.group = ModerMessagesGroup.tickets;
-				
-				if(index >= 0){
-					moderTicketsList.addElementAt(p, index);
-					return;
-				}
-				moderTicketsList.addElement(p);
-			}
-			
-			private function addMessage(e:Word, index:int = -1):void
-			{
-				var p:ModerMessagePlaceholder = new ModerMessagePlaceholder();
-				p.currentState = 'message';
-				p.word = e;
-				if(p.group){
-					p.group.Remove(p);
-				}
-				p.group = ModerMessagesGroup.messages;
+				p.group = ticket ? ModerMessagesGroup.tickets : ModerMessagesGroup.messages;
 				
 				if(index >= 0){
 					moderTicketsList.addElementAt(p, index);
@@ -289,7 +245,7 @@
 				getTicketsFromServer();
 			}
 			
-			private function mOver(e:MouseEvent):void
+			/*private function mOver(e:MouseEvent):void
 			{
 				starGroup.addEventListener(MouseEvent.MOUSE_MOVE, mMove);
 			}
@@ -314,9 +270,9 @@
 					applyStars( starNumber );
 				}
 				previousNumber = starNumber;
-			}
+			}*/
 			
-			private function applyStars(value:int):void {
+			/*private function applyStars(value:int):void {
 				var star:Star;
 				var stars:int = starGroup.numChildren;
 				
@@ -326,20 +282,37 @@
 					star.checked = (value > i);
 				}
 				getTicketsFromServer();
-			}
+			}*/
 			
 			private function getTicketsFromServer():void
 			{
 				if (moder)
 				{
-					Connection.send({getModeratorResponseTikets: {id: moder.id, stars: starNumber, timeFrom: firstUnix, timeTo: secondUnix}});
+					Connection.send({getModeratorResponseMessages: {id: moder.id, estimate: estimate, timeFrom: firstUnix, timeTo: secondUnix}});
 				}
+			}
+			
+			protected function onGroupChange(event:Event):void
+			{
+				var currentEstimate:int = group.selectedValue as int;
+				switch(currentEstimate)
+				{
+					case ESTIMATE_LIKE:
+						Debug.Trace("filterGood");
+						break;
+					case ESTIMATE_DISLIKE:
+						Debug.Trace("filterBad");
+						break;
+				}
+				estimate = currentEstimate;
+				getTicketsFromServer();
 			}
 			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
 		<mx:DateFormatter id="dateFormatter"/>
+		<s:RadioButtonGroup id="group" change="onGroupChange(event)" />
 	</fx:Declarations>
 	<s:Rect width="100%" height="100%" radiusX="3" radiusY="3">
 		<s:fill>
@@ -365,8 +338,23 @@
 			<s:Label text=" к списку тикетов" verticalCenter="0" fontSize="16" textDecoration="underline"  color="#666666" mouseEnabled="false"></s:Label>
 		</s:HGroup>
 	<!--</s:Group>-->
-	<s:HGroup top="10" left="18" gap="5" verticalAlign="middle" includeIn="tickets">
-		<s:Group>
+	<s:HGroup top="10" left="18" gap="6" verticalAlign="middle" includeIn="tickets">
+		<s:HGroup id="filterGroup" paddingRight="10">
+			<!--<s:RadioButton id="filterAll" buttonMode="true" label="все" value="filterAll" group="{group}"  selected="true" skinClass="skin.button.RadioButtonTextFilterSkin" toolTip="все" />
+			<s:Line height="100%">
+			   <s:stroke>
+				  <s:SolidColorStroke color="#cbcbcb" weight="1" caps="square"/>
+			   </s:stroke>
+			</s:Line>-->
+			<s:RadioButton id="filterBad" buttonMode="true" label="плохие" value="2" group="{group}" selected="true" skinClass="skin.button.RadioButtonTextFilterSkin" toolTip="с негативной оценкой" />
+			<s:Line height="100%">
+			   <s:stroke>
+				  <s:SolidColorStroke color="#cbcbcb" weight="1" caps="square"/>
+			   </s:stroke>
+			</s:Line>
+			<s:RadioButton id="filterGood" buttonMode="true" label="хорошие" value="1" group="{group}" skinClass="skin.button.RadioButtonTextFilterSkin" toolTip="с позитивной оценкой" />
+		</s:HGroup>
+		<!--<s:Group>
 			<s:HGroup id="starGroup" gap="0" width="88" mouseMove="mMove(event)" mouseOver="mOver(event)" mouseOut="mOut(event)" mouseChildren="false">
 				<local:Star></local:Star>
 				<local:Star></local:Star>
@@ -374,10 +362,10 @@
 				<local:Star></local:Star>
 				<local:Star></local:Star>
 			</s:HGroup>
-		</s:Group>
-		<s:Label text="от: " verticalCenter="0" fontSize="14" ></s:Label>
+		</s:Group>-->
+		<s:Label text="с: " verticalCenter="0" fontSize="14" ></s:Label>
 		<mx:DateField id="date1" change="useDate(event)" formatString="YYYY-MM-DD" monthNames="['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']" dayNames="['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ']" firstDayOfWeek="1" minYear="2012" selectableRange="{{rangeEnd:date2.selectedDate}}"></mx:DateField>
-		<s:Label text="до: " verticalCenter="0" fontSize="14"></s:Label>
+		<s:Label text="по: " verticalCenter="0" fontSize="14"></s:Label>
 		<mx:DateField id="date2" change="useDate(event)" formatString="YYYY-MM-DD" monthNames="['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']" dayNames="['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ']" firstDayOfWeek="1" minYear="2012" selectableRange="{{rangeStart: date1.selectedDate,rangeEnd:new Date()}}"></mx:DateField>
 	</s:HGroup>
 	<s:Scroller id="answerScroller" top="44" bottom="20" width="100%" horizontalScrollPolicy="off">

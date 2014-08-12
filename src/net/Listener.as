@@ -2,7 +2,6 @@ package net
 {
 	import flash.events.EventDispatcher;
 	import flash.utils.ByteArray;
-	import messages.ModerTicketsList;
 	import messages.ModerMessagesList;
 	import messages.Owner;
 	
@@ -43,7 +42,7 @@ package net
 			
 			c.registerCallBack("getModerators", onGetModerators);
 			
-			c.registerCallBack("responseTikets", onResponseTickets);
+			c.registerCallBack("responseMessages", onResponseMessages);
 			
 			c.registerCallBack("moderatorMessages", onModeratorMessages);
 			
@@ -160,10 +159,10 @@ package net
 			Controller.Invoke("moders", moders);
 		}
 		
-		private function onResponseTickets(data:Object = null):void 
+		private function onResponseMessages(data:Object = null):void 
 		{
-			var mes:Vector.<Message> = Connection.parse(data.messages, Class(Vector.<Message>)) as Vector.<Message>;
-			ModerTicketsList.AddList(mes);
+			var mes:Vector.<Word> = Connection.parse(data.messages, Class(Vector.<Word>)) as Vector.<Word>;
+			ModerMessagesList.AddList(mes, true);
 		}
 		
 		private function onModeratorMessages(data:Object = null):void 

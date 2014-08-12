@@ -5,6 +5,7 @@ package messages
 		public static const STATE_SCHEDULED:String = 'scheduled';
 		public static const STATE_ANSWERED:String = 'answered';
 		public static const STATE_CLOSED:String = 'closed';
+		public static const STATE_READ:String = 'read';
 		
 		public static const TYPE_ERROR:String = 'error';
 		public static const TYPE_PROPOSAL:String = 'proposal';
@@ -25,9 +26,10 @@ package messages
 		
 		public static function getState(state:String):String{
 			switch(state){
-				case STATE_SCHEDULED: return "обработанные";
-				case STATE_ANSWERED: return "предложение";
-				case STATE_CLOSED: return "партнерство";
+				case STATE_SCHEDULED: return "обработано";
+				case STATE_ANSWERED: return "отвечено";
+				case STATE_CLOSED: return "закрыто";
+				case STATE_READ: return "прочтено";
 			}
 			return "...";
 		}

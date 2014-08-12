@@ -134,7 +134,7 @@
 				title.text = _moder.name + ' (' + _moder.login + ')';
 				average.text = "id: " + _moder.id.toString();
 				
-				var tmpArr:Array = _moder.averageScore.split(".");
+				/*var tmpArr:Array = _moder.averageScore.split(".");
 				if ( tmpArr.length > 1 )
 				{
 					if ( tmpArr[1] == "0" )
@@ -142,8 +142,8 @@
 						type.text = "средняя оценка: " + tmpArr[0];
 						return;
 					}
-				}
-				type.text = "средняя оценка: " + _moder.averageScore;
+				}*/
+				type.text = "лайков/дизлайков: " + _moder.like + " / " + _moder.disLike;
 			}
 			
 			protected function onRollOver(event:MouseEvent = null):void

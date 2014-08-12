@@ -6,6 +6,13 @@
 			   minWidth="600" minHeight="400" 
 			   preinitialize="onPreinit(event)"
 			   creationComplete="onComplete(event)">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		
+        .filterLabel s|Label:over {
+            textDecoration: underline;
+        }
+    </fx:Style>
 	<fx:Script>
 		<![CDATA[
 			import core.Core;

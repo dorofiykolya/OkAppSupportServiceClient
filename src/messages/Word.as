@@ -7,5 +7,7 @@ package messages
 		public var type:String;
 		public var message:String;
 		public var time:uint;
+		public var estimate:int;
+		public var ticketId:int;
 	}
 }
