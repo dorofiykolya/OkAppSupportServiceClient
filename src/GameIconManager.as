@@ -12,6 +12,9 @@ package
 		[Embed('assets/pi_game.png')]
 		public static const pi:Class;
 		
+		[Embed('assets/icon-36.png')]
+		public static const pi2:Class;
+		
 		[Embed('assets/pi_game.png')]
 		public static const mi:Class;
 		
