@@ -11,7 +11,7 @@ package
 		public static const ZOMBIE:int = 2;
 		public static const PIRATES1:int = 3;
 		public static const PIRATES2:int = 4;
-		public static const MILITARY:int = 5;
+		public static const CASINO:int = 5;
 		
 		public static function game(id:int):String
 		{
@@ -25,8 +25,8 @@ package
 					return "Пираты"; 
 				case PIRATES2: 
 					return "Pirate War: Age of Strike";
-				case MILITARY: 
-					return "Милитари";
+				case CASINO: 
+					return "Casino";
 			}
 			return "";
 		}
@@ -43,8 +43,8 @@ package
 					return GameIconManager.pi;
 				case Game.PIRATES2: 
 					return GameIconManager.pi2;
-				case Game.MILITARY: 
-					return GameIconManager.mi;
+				case Game.CASINO: 
+					return GameIconManager.ca;
 			}
 			return GameIconManager.clear;
 		}

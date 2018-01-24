@@ -18,6 +18,9 @@ package
 		[Embed('assets/pi_game.png')]
 		public static const mi:Class;
 		
+		[Embed('assets/PokerCityAppIcon_57.png')]
+		public static const ca:Class;
+		
 		[Embed('assets/social network.png')]
 		public static const clear:Class; 
 		
