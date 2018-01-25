@@ -4,10 +4,12 @@
 		 xmlns:mx="library://ns.adobe.com/flex/mx"
 		 source.answered="@Embed('assets/ok.png')"
 		 source.closed="@Embed('assets/ok.png')"
-		 source.scheduled="@Embed('assets/new.png')">
+		 source.scheduled="@Embed('assets/new.png')"
+		 source.read="@Embed('assets/ok.png')">
 	<s:states>
 		<s:State name="scheduled" />
 		<s:State name="answered" />
 		<s:State name="closed" />
+		<s:State name="read" />
 	</s:states>
 </s:Image>
